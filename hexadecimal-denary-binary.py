@@ -4,8 +4,10 @@
 # 2. Don't use any inbuilt modules
 # 3. TUI / GUI
 # 4. 16-bit, possibly 32-bit
+errors = {"HEX FORMAT" : "INVALID HEX character",
+}
+#print(errors["HEX FORMAT"])
 
-possibleTypes = "BIN DEN HEX".split(" ")
 def _type(starting):
 
     if starting.isdigit():
@@ -23,24 +25,56 @@ def _type(starting):
 
 def checkBinaryFormat(n):
     # Binary number has to have 8 full bits
-    if n%8 != 0:
-        return False
+    if len(list(n))%8 != 0:
+        getStartInput(message="Binary number must be 8 bits")
     return True
 
 def checkHexFormat(n):
     allowedChars = "0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F".split(",")
-    print(allowedChars)
+    #print(allowedChars)
     for char in str(n):
         if char.upper() not in allowedChars:
-            print(char)
-            return False
+            # print(char)
+            return "INVALID HEX"
+            #return f"INVALID HEX: {char}"
     return True
 
-def checkStarting(_type):
-    pass
+def checkStarting(startingType, starting):
+    try:
+        if startingType == "BIN": checkBinaryFormat(starting)
+        elif startingType == "HEX": 
+            if checkHexFormat(starting) == "INVALID HEX":
+                return False, "INVALID HEX"
+                # getStartInput(message = "INVALID HEX")
 
-# print(checkHexFormat("ede345"))
-            
+        # ELIF DENARY
+        return True, "Successful"
+    except TypeError:
+        return False, "Unsuccessful"
 
-starting = input("Enter the input")
-startingType = _type(starting)
+def getStartInput(message = None):
+    startingType = "INVALID"
+    if message:
+        print(f"{message}")
+    starting = input("Enter the input >>> ")
+
+    #print(_type(starting))
+    #print(starting)
+
+    validatedSuccessfully, message = checkStarting(_type(starting), starting)
+
+    if validatedSuccessfully:
+        startingType = _type(starting)
+    else:
+        print(message)
+        #startingType = "INVALID"
+
+    # startingType = _type(starting) if checkStarting(_type(starting), starting) else "unknown"
+    return startingType
+           
+possibleTypes = "BIN DEN HEX".split(" ")
+print(getStartInput())
+
+#run()
+#starting = input("Enter the input")
+#startingType = _type(starting) if checkStarting(_type(starting), starting) else "unknown"
