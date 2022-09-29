@@ -1,6 +1,6 @@
 import hbd_gui_ui as gui # pyuic6 -x -o hbd_gui_ui.py hdb_gui.ui
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtWidgets
 
 class ConversionWindow(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs): # Passing over any parameters
@@ -33,6 +33,17 @@ class ConversionWindow(QtWidgets.QWidget):
     #### CONVERSION
 
     def binToDen(self, n):
+        """
+        Converts Binary To Denary:
+        Itterates over a binary value from LSB to MSB if the value of that bit is 1, 
+        then put the base of that index to the power of 2 and add to the total.
+        Ie. 
+        >>> 10101101 
+         1  0  1  0  1 1 0 1 BINARY
+        128 64 32 16 8 4 2 1 POWER OF 2
+        RETURN: 1+4+8+32+128 = 173
+        """
+    
         total = 0
         bList = [(2**x) for x in range(len(n) - 1, -1, -1)]
         
@@ -43,6 +54,24 @@ class ConversionWindow(QtWidgets.QWidget):
         return total
     
     def denToBin(self, n):
+        """
+        Converts Denary to Binary:
+        Itterates over a denary value, creates a list using list comprehension and starts 
+        from first index and minuses index from input value and adds index to variable "b".
+
+        >>> 999
+        bList [512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
+        n 487 b 1
+        n 231 b 11
+        n 103 b 111
+        n 39  b 1111
+        n 7   b 11111
+        n 3   b 11111001
+        n 1   b 111110011
+        n 0   b 1111100111
+        RETURN 1111100111
+        """
+        
         n = int(n)
         bList = [(2**x) for x in range(n.bit_length() - 1, -1, -1)]
         b = ""

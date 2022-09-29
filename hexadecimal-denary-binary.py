@@ -102,18 +102,24 @@ def denToBin(n):
     n = int(n)
     bList = [(2**x) for x in range(n.bit_length() - 1, -1, -1)]
     b = ""
+    #print ("n " + str(n))
+    #print("bList " + str(bList))
     for num in bList:
         if (n - num) > -1:
             n -= num
             b+= str(1)
+            #print("n",n)
+            #print("b",b)
         else: b+= str(0)
     return b
 
 def hexToBinary(n):
+    print(n)
     hexValues = {0:0, 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, "A":10, "B":11, "C":12, "D":13, "E":14, "F":15}
     b = ""
     for hexDigit in list(n):
         for digit in denToBin(hexValues[hexDigit]): b+= str(digit)
+        print("b",b)
     return b
 
 def binaryToHex(n):
@@ -143,8 +149,11 @@ def hexToDenary(n):
 def denaryToHex(n):
     return binaryToHex(denToBin(n))
 
+print(hexToBinary("AA"))
+
+#print(binToDen("10101101"))
 #print(denToBin(999))
-print(denaryToHex("511"))
+#print(denaryToHex("511"))
 #print(binaryToHex("0000000111111111"))
 
 #print(hexToDenary("BCD"))
