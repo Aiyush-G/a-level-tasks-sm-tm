@@ -28,6 +28,13 @@ class GameState():
         self.debug = True # Console output variable
         self.trackedGridState = None
         self.trackedGridClickedBy = None
+        self.won = False
+        self.wonBy = False
+    
+    def setup(self):
+        # AFTER WINNING
+        self.won = False # Sets the true when the game has been won
+        self.wonBy = False
     
     def incrementTurn(self):
         # Swaps player turns from 1 to 2
@@ -38,14 +45,23 @@ class GridCell(arcade.SpriteSolidColor):
     def __init__(self, WIDTH, HEIGHT, COLOR, row, column):
         super().__init__(WIDTH, HEIGHT, COLOR)
 
+        """ REFERENCE:
+        print("DEBUG")
+        self.grid_sprites[0][0].color = arcade.color.BLUE
+        print(self.grid_sprites[0][0].color)
+        print("END DEBUG")
+        """
+
         self.clickedBy = None
         self.row = row
         self.column = column
         self.clickedBy = None
         self.state = "notClicked"
-    
+        self.winningCell = False
+
     def reset(self):
         self.color = self.COLOR
+        self.winningCell = False
         
     def occupied(self):
         if self.state == "notClicked": 
@@ -134,11 +150,6 @@ class TicTacToe(arcade.Window):
         Normally, you'll call update() on the sprite lists that
         need it.
         """
-        def checkWinCondition(self):
-            """
-            Checks whether any of the cells selected by the same player are 3 in a row
-            """
-            pass
         pass
     
     def trackGrid(self):
@@ -148,7 +159,7 @@ class TicTacToe(arcade.Window):
             trackedGridState.append([])
             for column in range(COLUMN_COUNT):
                 trackedGridState[row].append(self.grid_sprites[row][column].state)
-        trackedGridState.reverse()
+        #trackedGridState.reverse() ############
 
         # Tracks who the grid is clicked by
         trackedGridClickedBy = []
@@ -156,7 +167,7 @@ class TicTacToe(arcade.Window):
             trackedGridClickedBy.append([])
             for column in range(COLUMN_COUNT):
                 trackedGridClickedBy[row].append(self.grid_sprites[row][column].clickedBy)
-        trackedGridClickedBy.reverse()
+        #trackedGridClickedBy.reverse() #########
 
         gameState.trackedGridState = trackedGridState
         gameState.trackedGridClickedBy = trackedGridClickedBy
@@ -185,7 +196,17 @@ class TicTacToe(arcade.Window):
 
         for row in gcb:
             if all(x==row[0] for x in row) and row[0] != None:
-                print(f"3 in row on {gcb.index(row)}")
+                #print(f"3 in row on {gcb.index(row)} won by player {row[0]}")
+                self.hasWon(_type = "row", pos = gcb.index(row), winner = row[0])
+                
+                # self.grid_sprites[gcb.index(row)][0].color = arcade.color.GREEN
+                # self.grid_sprites[gcb.index(row)][1].color = arcade.color.GREEN
+                # self.grid_sprites[gcb.index(row)][2].color = arcade.color.GREEN
+
+                # Updates the winning cell property so the cells can be highlighted later
+                for index in range(0, ROW_COUNT):
+                    self.grid_sprites[gcb.index(row)][index].winningCell = True
+                    
 
         ### IMPLEMENTED COLUMN CHECKING
         for i in gcb:
@@ -195,16 +216,29 @@ class TicTacToe(arcade.Window):
                 vals.append(curr)
             if all(x==vals[0] for x in vals) and vals[0] != None: 
                 print(f"Column {currColumn} has 3 in a row")
-            vals.clear()
+                self.hasWon(_type = "column", pos = currColumn, winner = vals[0])
+
+                # Updates the winning cell property so the cells can be highlighted later
+                for index in range(0, COLUMN_COUNT):
+                    self.grid_sprites[index][currColumn].winningCell = True
+
+            vals.clear() # Clear the temporary list containing column cell values
         
         # IMPLEMENT DIAGONAL CHECKING - NOT DYNAMIC RIGHT NOW AND ONLY WORKS WITH 3X3
         # DIAGONAL L2R
         if gcb[0][0] != None:
             if gcb[0][0] == gcb[1][1] and gcb[0][0] == gcb[2][2]:
-                print("DIAGONAL 3 X 3 LTR")
+                #print("DIAGONAL 3 X 3 LTR")
+                self.hasWon(_type = "DIAGONAL", pos = "3 X 3 LTR", winner = gcb[0][0])
         if gcb[0][2] != None:
             if gcb[0][2] == gcb[1][1] and gcb[0][2] == gcb[2][0]:
-                print("DIAGONAL 3 X 3 RTL")
+                #print("DIAGONAL 3 X 3 RTL")
+                self.hasWon(_type = "DIAGONAL", pos = "3 X 3 RTL", winner = gcb[0][2])
+    
+    def hasWon(self, _type, pos, winner): # Column, Row, Diagonal / row 1,2,3, etc... / 0,1
+        print(f"3 in a row on {_type} {pos} by player {winner} aka ({winner+1})")
+        gameState.won = True
+        gameState.wonBy = winner
 
 
     def on_mouse_press(self, x, y, button, key_modifiers):
@@ -225,6 +259,7 @@ class TicTacToe(arcade.Window):
         self.calculateWin()
         
 gameState = GameState()
+gameState.setup()
 
 def main():
     """ Main function """
