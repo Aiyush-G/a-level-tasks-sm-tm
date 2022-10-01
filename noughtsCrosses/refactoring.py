@@ -44,6 +44,7 @@ class GridCell(arcade.SpriteSolidColor):
         self.clickedBy = None
         self.state = "notClicked"
         self.winningCell = False
+        self.animationFinished = False
 
     def reset(self):
         self.color = self.COLOR
@@ -55,8 +56,8 @@ class GridCell(arcade.SpriteSolidColor):
     
     def update_animation(self, delta_time):
         if self.winningCell:
-            my_target_color = (0, 255, 0) # GREEN
-            transition_speed = 0.05
+            my_target_color = (0, 255, 0) # Blue
+            transition_speed = 0.1
             current_color = self.color
             
             colour = (
@@ -65,6 +66,8 @@ class GridCell(arcade.SpriteSolidColor):
                 current_color[2] + (transition_speed * (my_target_color[2] - current_color[2]))) 
 
             self.color = colour
+            
+
 
     def occupied(self):
         if self.state == "notClicked": 
@@ -92,11 +95,13 @@ class GameState():
         self.trackedGridClickedBy = None
         self.won = False
         self.wonBy = False
+        self.round = 1
     
     def setup(self):
         # AFTER WINNING
         self.won = False # Sets the true when the game has been won
         self.wonBy = False
+        
     
     def incrementTurn(self):
         # Swaps player turns from 1 to 2
@@ -198,8 +203,18 @@ class GameView(arcade.View):
     
     def on_update(self, delta_time):
         """ Movement / Game Logic"""
+        allOccupied = True
         for sprite in self.scene[LAYER_NAME_GRID]:
             sprite.isWinningCell()
+
+            # If the grid is filled but there is no wining state then move onto the next round
+            if sprite.state == "notClicked":
+                allOccupied = False 
+        if allOccupied: self.nextRound()
+        
+
+        
+
         
         # Update Animations
         self.scene.update_animation(
@@ -212,17 +227,21 @@ class GameView(arcade.View):
         Called when the user presses a mouse button.
         """
 
-        clicked = arcade.get_sprites_at_point((x, y), self.scene[LAYER_NAME_GRID])
-        if clicked:
-            for cell in clicked:     
-                print(f"cell state {cell.state}")
-                if cell.state == "notClicked":
-                    cell.clicked()
-                    gameState.incrementTurn()
-                else:
-                    print("Cell Occupied")
-        self.trackGrid()
-        self.calculateWin()
+        # If the game has been won by someone then go to the next round
+        if not gameState.won:
+            clicked = arcade.get_sprites_at_point((x, y), self.scene[LAYER_NAME_GRID])
+            if clicked:
+                for cell in clicked:     
+                    print(f"cell state {cell.state}")
+                    if cell.state == "notClicked":
+                        cell.clicked()
+                        gameState.incrementTurn()
+                    else:
+                        print("Cell Occupied")
+            self.trackGrid()
+            self.calculateWin()
+        else:
+            self.nextRound()
 
     def trackGrid(self):
         # Tracks the grid state ie. clicked / unclicked
@@ -302,15 +321,32 @@ class GameView(arcade.View):
             if gcb[0][0] == gcb[1][1] and gcb[0][0] == gcb[2][2]:
                 #print("DIAGONAL 3 X 3 LTR")
                 self.hasWon(_type = "DIAGONAL", pos = "3 X 3 LTR", winner = gcb[0][0])
+
+                # Updates the winning cell property so the cells can be highlighted later
+                self.grid_sprites[0][0].winningCell = True
+                self.grid_sprites[1][1].winningCell = True
+                self.grid_sprites[2][2].winningCell = True
+        
+        
         if gcb[0][2] != None:
             if gcb[0][2] == gcb[1][1] and gcb[0][2] == gcb[2][0]:
                 #print("DIAGONAL 3 X 3 RTL")
                 self.hasWon(_type = "DIAGONAL", pos = "3 X 3 RTL", winner = gcb[0][2])
+                self.grid_sprites[0][2].winningCell = True
+                self.grid_sprites[1][1].winningCell = True
+                self.grid_sprites[2][0].winningCell = True
+
     
     def hasWon(self, _type, pos, winner): # Column, Row, Diagonal / row 1,2,3, etc... / 0,1
         print(f"3 in a row on {_type} {pos} by player {winner} aka ({winner+1})")
         gameState.won = True
         gameState.wonBy = winner
+    
+    def nextRound(self):
+        gameState.round += 1
+        gameState.setup()
+        game_view = GameView()
+        self.window.show_view(game_view)
      
 gameState = GameState()
 gameState.setup()
