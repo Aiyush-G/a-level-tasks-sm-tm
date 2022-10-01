@@ -8,6 +8,10 @@ from pyglet.math import Vec2
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 SCREEN_TITLE = "Aiyush Gupta - Tic Tac Toe"
+GUI_TITLE = "Tic-Tac-Toe"
+GUI_TITLE_FONT_SIZE = 50
+GUI_TITLE_FONT = "Kenney Blocks"
+GUI_SUBTITLE_FONT_SIZE = 25
 
 # Player Grid 3X3 with spacing between the cells
 ROW_COUNT = 3
@@ -183,9 +187,46 @@ class GameView(arcade.View):
     
     def on_draw(self):
         """ Render the screen"""
-
         # Clear the screen to the background colour
         self.clear()
+
+        # Switch to GUI camera before drawing GUI items
+        # 1. Score / Menu / Timer etc...
+        self.gui_camera.use()
+
+        """
+        GUI ELEMENTS:
+        BG / TITLE / ROUND etc..
+        """
+
+        arcade.draw_rectangle_filled(
+            center_x = self.scene[LAYER_NAME_GRID].center[0], 
+            center_y = self.scene[LAYER_NAME_GRID].center[1], 
+            width = ROW_COUNT*(WIDTH+1.5*MARGIN), 
+            height= COLUMN_COUNT*(HEIGHT+1.5*MARGIN), 
+            color = (182, 213, 227)
+        )
+
+        arcade.draw_text(GUI_TITLE,
+                         140,
+                         SCREEN_HEIGHT - 80,
+                         DARK_BLUE,
+                         GUI_TITLE_FONT_SIZE,
+                         font_name=GUI_TITLE_FONT)
+        
+        arcade.draw_text(f"Player: {gameState.turn + 1}",
+                         300,
+                         70,
+                         MEDIUM_BLUE,
+                         GUI_SUBTITLE_FONT_SIZE,
+                         font_name=GUI_TITLE_FONT)
+        
+        arcade.draw_text(f"Round {gameState.round}",
+                         320,
+                         30,
+                         MEDIUM_BLUE,
+                         GUI_SUBTITLE_FONT_SIZE,
+                         font_name=GUI_TITLE_FONT)
 
         # Activate Camera (to be used for screen effects)
         self.camera.use()
@@ -194,9 +235,7 @@ class GameView(arcade.View):
         self.scene.draw()
         # self.grid_sprite_list.draw()
 
-        # Switch to GUI camera before drawing GUI items
-        # 1. Score / Menu / Timer etc...
-        self.gui_camera.use()
+        
         """
         ADD GUI CODE HERE
         """
