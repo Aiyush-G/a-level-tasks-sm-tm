@@ -51,11 +51,21 @@ class GridCell(arcade.SpriteSolidColor):
     
     def isWinningCell(self):
         if self.winningCell:
-            self.color = DARK_BLUE
+            return True
     
     def update_animation(self, delta_time):
-        print(arcade.lerp(1, 255, 2))
-        
+        if self.winningCell:
+            my_target_color = (0, 255, 0) # GREEN
+            transition_speed = 0.05
+            current_color = self.color
+            
+            colour = (
+                current_color[0] + (transition_speed * (my_target_color[0] - current_color[0])), 
+                current_color[1] + (transition_speed * (my_target_color[1] - current_color[1])), 
+                current_color[2] + (transition_speed * (my_target_color[2] - current_color[2]))) 
+
+            self.color = colour
+
     def occupied(self):
         if self.state == "notClicked": 
             print("Not occupied")
