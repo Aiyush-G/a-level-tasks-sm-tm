@@ -100,6 +100,8 @@ class GameState():
         self.won = False
         self.wonBy = False
         self.round = 1
+        self.backingTack = arcade.Sound(":resources:music/funkyrobot.mp3")
+        self.backingTack.play(loop=True)
     
     def setup(self):
         # AFTER WINNING
@@ -133,6 +135,11 @@ class GameView(arcade.View):
         self.grid_sprite_list = None
         self.grid_sprites = None
 
+        # Audio
+        #self.backingTrack = None
+        self.winTrack = None
+        self.clickTrack = None
+
         # State Management
         gameState.turn = None
     
@@ -152,6 +159,12 @@ class GameView(arcade.View):
         self.grid_sprite_list = arcade.SpriteList()
         self.grid_sprites = []
         gameState.turn = 0
+        
+        # Audio
+        self.winTrack = arcade.Sound(":resources:sounds/upgrade2.wav")
+        self.clickTrack = arcade.Sound(":resources:sounds/hit4.wav")
+        self.noWinTrack = arcade.Sound(":resources:sounds/lose2.wav")
+
         
         # Grid Creation
         # Stores grid in grid_spire_list and grid_sprites (as representational 2D array)
@@ -249,7 +262,9 @@ class GameView(arcade.View):
             # If the grid is filled but there is no wining state then move onto the next round
             if sprite.state == "notClicked":
                 allOccupied = False 
-        if allOccupied: self.nextRound()
+        if allOccupied: 
+            self.noWinTrack.play()
+            self.nextRound()
         
 
         
@@ -273,6 +288,7 @@ class GameView(arcade.View):
                 for cell in clicked:     
                     print(f"cell state {cell.state}")
                     if cell.state == "notClicked":
+                        self.clickTrack.play()
                         cell.clicked()
                         gameState.incrementTurn()
                     else:
@@ -380,6 +396,7 @@ class GameView(arcade.View):
         print(f"3 in a row on {_type} {pos} by player {winner} aka ({winner+1})")
         gameState.won = True
         gameState.wonBy = winner
+        self.winTrack.play()
     
     def nextRound(self):
         gameState.round += 1
@@ -392,6 +409,7 @@ gameState.setup()
 
 def main():
     """ Main function """
+
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     game_view = GameView()
     window.show_view(game_view)
