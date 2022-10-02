@@ -32,6 +32,7 @@ theme={
         "GUI_TITLE" : "Tic-Tac-Toe",
         "GUI_TITLE_FONT_SIZE" : 50,
         "GUI_TITLE_FONT" : "Kenney Blocks",
+        "GUI_SUBTITLE_FONT" : "Kenney Blocks",
         "GUI_SUBTITLE_FONT_SIZE" : 25,
     },
 
@@ -47,6 +48,7 @@ theme={
         "GUI_TITLE" : "Tic-Tac-Toe",
         "GUI_TITLE_FONT_SIZE" : 50,
         "GUI_TITLE_FONT" : "Kenney Blocks",
+        "GUI_SUBTITLE_FONT" : "Kenney Mini Square",
         "GUI_SUBTITLE_FONT_SIZE" : 25,
     },
 
@@ -62,6 +64,7 @@ theme={
         "GUI_TITLE" : "Tic-Tac-Toe",
         "GUI_TITLE_FONT_SIZE" : 50,
         "GUI_TITLE_FONT" : "Kenney Blocks",
+        "GUI_SUBTITLE_FONT" : "Kenney Blocks",
         "GUI_SUBTITLE_FONT_SIZE" : 25,
     },
 }

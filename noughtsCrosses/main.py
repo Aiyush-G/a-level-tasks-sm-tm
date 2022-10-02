@@ -204,27 +204,35 @@ class GameView(arcade.View):
             height= COLUMN_COUNT*(HEIGHT+1.5*MARGIN), 
             color = FRAME_COLOR # (182, 213, 227) OLD
         )
-
-        arcade.draw_text(theme[THEME]["GUI_TITLE"],
+        
+        textTitle = arcade.Text(theme[THEME]["GUI_TITLE"],
                          140,
                          SCREEN_HEIGHT - 80,
                          theme[THEME]["TITLE_COLOUR"],
                          theme[THEME]["GUI_TITLE_FONT_SIZE"],
                          font_name = theme[THEME]["GUI_TITLE_FONT"],)
         
-        arcade.draw_text(f"Player: {gameState.turn + 1}",
+        textPlayer = arcade.Text(f"Player: {gameState.turn + 1}",
                          300,
                          70,
                          theme[THEME]["SUBTITLE_COLOUR"],
                          theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
-                         font_name = theme[THEME]["GUI_TITLE_FONT"])
-        
-        arcade.draw_text(f"Round {gameState.round}",
+                         font_name = theme[THEME]["GUI_SUBTITLE_FONT"])
+
+        textRound = arcade.Text(f"Round {gameState.round}",
                          320,
                          30,
                          theme[THEME]["SUBTITLE_COLOUR"],
                          theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
-                         font_name=theme[THEME]["GUI_TITLE_FONT"])
+                         font_name=theme[THEME]["GUI_SUBTITLE_FONT"])
+        # Place text in the center of the screen: x start = (screen width / 2) - (content width / 2)
+        textRound.x = (SCREEN_WIDTH / 2) - (textRound.content_width / 2)
+        textPlayer.x = (SCREEN_WIDTH / 2) - (textPlayer.content_width / 2)
+        textTitle.x = (SCREEN_WIDTH / 2) - (textTitle.content_width / 2)
+
+        textRound.draw()
+        textPlayer.draw()
+        textTitle.draw()
 
         # Activate Camera (to be used for screen effects)
         self.camera.use()
