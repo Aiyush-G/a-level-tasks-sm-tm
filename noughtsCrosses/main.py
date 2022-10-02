@@ -1,5 +1,6 @@
 from pprint import pprint
 import arcade
+import arcade.gui
 import os
 from utility import *
 
@@ -87,6 +88,11 @@ class GameState():
         self.round = 1
         self.backingTack = arcade.Sound(":resources:music/funkyrobot.mp3")
         self.backingTack.play(loop=True)
+
+        # GUI
+        self.mode = "1v1" # vComputer / 1v1
+        self.numberOfRounds = "5" # 3 / 5 / 10
+        self.difficulty = "easy" # easy / difficult
     
     def setup(self):
         # AFTER WINNING
@@ -396,7 +402,195 @@ class GameView(arcade.View):
         gameState.setup()
         game_view = GameView()
         self.window.show_view(game_view)
-     
+
+class MainMenu(arcade.View):
+    """ Class that manages the 'menu' view """
+    #arcade.set_background_color(BACKGROUND_COLOR)
+
+    def __init__(self):
+        super().__init__()
+
+        self.gui_camera = arcade.Camera(self.window.width, self.window.height)
+
+        # Create and enable the UIManager
+        self.manager = arcade.gui.UIManager()
+        self.manager.enable()
+
+        # Create a box group to align the 'AI / 1V1' button in the center
+        self.v_box = arcade.gui.UIBoxLayout(
+            space_between= 10,
+        )
+        self.v_box_rounds_text = arcade.gui.UIBoxLayout(
+            space_between=10,
+        )
+        
+
+        # Style for button
+        buttonStyle = {
+            "bg_color": WINNING_COLOUR,
+            "bg_color_pressed": TITLE_COLOUR,
+            "font_color_pressed": BACKGROUND_COLOR,
+            "border_color_pressed": BACKGROUND_COLOR,
+            "font_name": "Kenney Pixel Square",
+            "font_size": 20,
+        }
+        # Create a button. We'll click on this to open our window.
+        # Add it v_box for positioning.
+
+        ### Choose Opponent
+        self.button_1v1 = arcade.gui.UIFlatButton(
+            text="1 vs 1", width=300, style=buttonStyle
+        )
+        self.button_vComputer = arcade.gui.UIFlatButton(
+            text="1 vs Computer", width=300, style = buttonStyle
+        )
+
+        ### Choose Number of Rounds
+        self.ui_text_label = arcade.gui.UITextArea(
+            text="Rounds:",
+            width=300,
+            height=40,
+            font_size=20,
+            font_name="Kenney Pixel Square",
+            text_color=TITLE_COLOUR
+            )
+        self.v_box_rounds_text.add(self.ui_text_label)
+
+        self.managerRounds = arcade.gui.UIAnchorWidget(
+                anchor_x="center_x",
+                anchor_y="center_y",
+                align_y=-50,
+                align_x=-10,
+                child=self.v_box_rounds_text)
+
+        self.button_round_3 = arcade.gui.UIFlatButton(
+            text="3", width=100, style = buttonStyle
+        )
+
+        self.button_round_5 = arcade.gui.UIFlatButton(
+            text="5", width=100, style = buttonStyle
+        )
+
+        self.button_round_10 = arcade.gui.UIFlatButton(
+            text="10", width=100, style = buttonStyle
+        )
+
+        ### Choose Difficulty
+        self.button_easy = arcade.gui.UIFlatButton(
+            text="easy", width=200, style = buttonStyle
+        )
+
+        self.button_difficult = arcade.gui.UIFlatButton(
+            text="difficult", width=200, style = buttonStyle
+        )
+
+        # VBOX Intial 
+        self.v_box.add(self.button_1v1)
+        self.v_box.add(self.button_vComputer)
+
+
+        # Add a hook to run when we click on the button.
+        self.button_1v1.on_click = self.button_1v1_clicked
+        self.button_vComputer.on_click = self.button_vComputer_clicked
+
+        self.button_round_3.on_click = self.round3
+        self.button_round_5.on_click = self.round5
+        self.button_round_10.on_click = self.round10
+
+        self.button_easy.on_click = self.choseEasy
+        self.button_difficult.on_click = self.choseDifficult
+
+        # Create a widget to hold the v_box widget, that will center the buttons
+        self.manager.add(
+            arcade.gui.UIAnchorWidget(
+                anchor_x="center_x",
+                anchor_y="center_y",
+                align_y=-120,
+                child=self.v_box)
+        )
+    
+    # There must be a more efficient way to do this ... :(
+    def round3(self, event): 
+        gameState.numberOfRounds = 3
+        self.chooseDifficulty()
+    def round5(self, event): 
+        gameState.numberOfRounds = 5
+        self.chooseDifficulty()
+    def round10(self, event): 
+        gameState.numberOfRounds = 10
+        self.chooseDifficulty()
+    
+    def choseEasy(self, event):
+        gameState.difficulty = "easy"
+        self.manager.disable()
+        self.goToGame()
+    
+    def choseDifficult(self, event):
+        gameState.difficulty = "difficult"
+        self.manager.disable()
+        self.goToGame()
+    
+    def chooseDifficulty(self):
+        self.v_box.clear()
+        self.manager.remove(self.managerRounds)
+        self.v_box.add(self.button_easy)
+        self.v_box.add(self.button_difficult)
+    
+    def chooseRounds(self):
+        self.v_box.clear()
+        self.v_box.vertical = False
+        # self.v_box.add(self.ui_text_label)
+        self.manager.add(self.managerRounds)
+        self.v_box.add(self.button_round_3)
+        self.v_box.add(self.button_round_5)
+        self.v_box.add(self.button_round_10)
+    
+    def button_1v1_clicked(self, event):
+        gameState.mode = "1v1"
+        self.chooseRounds()
+    
+    def button_vComputer_clicked(self, event):
+        gameState.mode = "vComputer"
+        self.chooseRounds()
+    
+    def goToGame(self):
+        game_view = GameView()
+        self.window.show_view(game_view)
+
+    def setup(self):
+        print("setup")
+        arcade.set_background_color(BACKGROUND_COLOR)
+    
+    def on_show_view(self):
+        self.setup()
+
+    def on_draw(self):
+        """
+        TITLE
+        buttons: ONE PLAYER / TWO PLAYER
+        buttons: Rounds: 1 / 2 / 3
+        IF ONE PLAYER:
+            buttons: DIFFICULTY: EASY / HARD
+            buttons: PLAYER_ORDER: COMPUTER / PERSON IS P1
+        """
+
+        self.clear()
+        self.gui_camera.use()
+        self.manager.draw()
+        
+
+        textTitle = arcade.Text(theme[THEME]["GUI_TITLE"],
+            140,
+            SCREEN_HEIGHT - 80,
+            theme[THEME]["TITLE_COLOUR"],
+            theme[THEME]["GUI_TITLE_FONT_SIZE"],
+            font_name = theme[THEME]["GUI_TITLE_FONT"])
+        
+        textTitle.x = (SCREEN_WIDTH / 2) - (textTitle.content_width / 2)
+        textTitle.y = (SCREEN_HEIGHT / 2)
+        textTitle.draw()
+                    
+
 gameState = GameState()
 gameState.setup()
 
@@ -404,8 +598,12 @@ def main():
     """ Main function """
 
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    game_view = GameView()
-    window.show_view(game_view)
+    
+    title_view = MainMenu()
+    window.show_view(title_view)
+
+    #game_view = GameView()
+    #window.show_view(game_view)
     #game = TicTacToe(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     #game.setup()
     arcade.run()
