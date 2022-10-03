@@ -31,7 +31,6 @@ class GridCell(arcade.SpriteSolidColor):
         self.clickedBy = None
         self.row = row
         self.column = column
-        self.clickedBy = None
         self.state = "notClicked"
         self.winningCell = False
         self.animationFinished = False
