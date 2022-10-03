@@ -1,8 +1,15 @@
-from pprint import pprint
+from pprint import pprint # Debugging
 import arcade
 import arcade.gui
 import os
-from utility import *
+from utility import * # My own library for managing theming
+import random # For the computers turn
+
+### TODO:
+### Implement Rounds DONE
+### Implement Computer vs 1
+###### Implement a simulated click
+### Implement difficulty
 
 THEME = "blues"
 
@@ -68,6 +75,7 @@ class GridCell(arcade.SpriteSolidColor):
 
     def clicked(self):
         print(f"Row {self.row}, Column {self.column}")
+
         if gameState.turn == 0: # Player 1
                 self.color = P1_COLOUR
                 self.clickedBy = 0
@@ -88,21 +96,31 @@ class GameState():
         self.backingTack = arcade.Sound(":resources:music/funkyrobot.mp3")
         self.backingTack.play(loop=True)
 
+        self.p0Score = 0
+        self.p1Score = 0
+
         # GUI
         self.mode = "1v1" # vComputer / 1v1
         self.numberOfRounds = "5" # 3 / 5 / 10
         self.difficulty = "easy" # easy / difficult
     
+    def reset(self):
+        # Call when going back to the menu alongisde setup
+        self.p0Score = 0 
+        self.p1Score = 0
+    
+    # For next round
     def setup(self):
         # AFTER WINNING
         self.won = False # Sets the true when the game has been won
         self.wonBy = False
+        self.turn = 0
         
     
     def incrementTurn(self):
         # Swaps player turns from 1 to 2
         self.turn = 0 if self.turn else 1
-        if self.debug: print(self.turn)
+        if self.debug: print(f"\n Turn: {self.turn}")
 
 
 class GameView(arcade.View):
@@ -230,6 +248,23 @@ class GameView(arcade.View):
                          theme[THEME]["SUBTITLE_COLOUR"],
                          theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
                          font_name=theme[THEME]["GUI_SUBTITLE_FONT"])
+        
+        p0Score = arcade.Text(f"P1 Score: {gameState.p0Score}",
+                         25,
+                         70,
+                         theme[THEME]["SUBTITLE_COLOUR"],
+                         theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
+                         font_name=theme[THEME]["GUI_SUBTITLE_FONT"])
+        
+        if gameState.mode == "vComputer": player = "CPU"
+        else: player = "P2"
+        p1Score = arcade.Text(f"{player} Score: {gameState.p1Score}",
+                         25,
+                         30,
+                         theme[THEME]["SUBTITLE_COLOUR"],
+                         theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
+                         font_name=theme[THEME]["GUI_SUBTITLE_FONT"])
+        
         # Place text in the center of the screen: x start = (screen width / 2) - (content width / 2)
         textRound.x = (SCREEN_WIDTH / 2) - (textRound.content_width / 2)
         textPlayer.x = (SCREEN_WIDTH / 2) - (textPlayer.content_width / 2)
@@ -238,6 +273,9 @@ class GameView(arcade.View):
         textRound.draw()
         textPlayer.draw()
         textTitle.draw()
+
+        p0Score.draw()
+        p1Score.draw()
 
         # Activate Camera (to be used for screen effects)
         self.camera.use()
@@ -260,14 +298,17 @@ class GameView(arcade.View):
             # If the grid is filled but there is no wining state then move onto the next round
             if sprite.state == "notClicked":
                 allOccupied = False 
-        if allOccupied: 
+        if allOccupied:
+            self.trackGrid()
+            #self.calculateWin()
+            arcade.pause(1)
             self.noWinTrack.play()
             self.nextRound()
         
+        if gameState.mode == "vComputer":
+            if gameState.turn == 1:
+                self.computerTurn()
 
-        
-
-        
         # Update Animations
         self.scene.update_animation(
             delta_time, 
@@ -281,6 +322,7 @@ class GameView(arcade.View):
 
         # If the game has been won by someone then go to the next round
         if not gameState.won:
+    
             clicked = arcade.get_sprites_at_point((x, y), self.scene[LAYER_NAME_GRID])
             if clicked:
                 for cell in clicked:     
@@ -293,8 +335,32 @@ class GameView(arcade.View):
                         print("Cell Occupied")
             self.trackGrid()
             self.calculateWin()
+
+            
         else:
             self.nextRound()
+    
+    def computerTurn(self):
+        """ Simulated playing via the computer """
+        # Requirements:
+        # Click a random cell
+        # Click a cell that isn't already clicked
+
+        # One way to tackle the difficult mode could be to use a minimax function
+        if not gameState.won:
+            chosenCell = False
+            while not chosenCell:
+                # print(self.grid_sprites[0][0].state)
+                randCell = random.choice(self.scene[LAYER_NAME_GRID])
+                if randCell.state == "notClicked":
+                    chosenCell = True
+            
+            randCell.clicked()
+            gameState.incrementTurn()
+
+            self.trackGrid()
+            self.calculateWin()
+            
 
     def trackGrid(self):
         # Tracks the grid state ie. clicked / unclicked
@@ -315,9 +381,15 @@ class GameView(arcade.View):
 
         gameState.trackedGridState = trackedGridState
         gameState.trackedGridClickedBy = trackedGridClickedBy
+        
+        #print("\n")
+        #gameState.trackedGridState.reverse()
+        #pprint(gameState.trackedGridState)
+        #print("\n")
 
-        pprint(gameState.trackedGridState)
-        pprint(gameState.trackedGridClickedBy)
+        # DEBUG PRETTY PRINT
+        #pprint(gameState.trackedGridState)
+        #pprint(gameState.trackedGridClickedBy)
     
     def calculateWin(self):
         """
@@ -394,13 +466,53 @@ class GameView(arcade.View):
         print(f"3 in a row on {_type} {pos} by player {winner} aka ({winner+1})")
         gameState.won = True
         gameState.wonBy = winner
+        if int(winner) == 0:
+            gameState.p0Score+= 1
+        elif int(winner) == 1:
+            gameState.p1Score += 1
+
         self.winTrack.play()
     
     def nextRound(self):
         gameState.round += 1
-        gameState.setup()
-        game_view = GameView()
-        self.window.show_view(game_view)
+        print(f"Round: {gameState.round}")
+        print(f"Total number of rounds: {gameState.numberOfRounds}")
+
+        if int(gameState.numberOfRounds) < gameState.round:
+            print(f"{gameState.numberOfRounds} < {gameState.round}")
+            end_view = GameEnd()
+            self.window.show_view(end_view)
+        else:
+            gameState.setup()
+            game_view = GameView()
+            self.window.show_view(game_view)
+
+class GameEnd(arcade.View):
+    def __init__(self):
+        super().__init__()
+        self.gui_camera = arcade.Camera(self.window.width, self.window.height)
+    
+    def on_draw(self):
+        """
+        TITLE
+        WINNER
+        MODE 
+        DIFFICULTY
+        """
+
+        self.clear()
+        self.gui_camera.use()
+
+        textTitle = arcade.Text("END OF GAME",
+            140,
+            SCREEN_HEIGHT - 80,
+            theme[THEME]["TITLE_COLOUR"],
+            theme[THEME]["GUI_TITLE_FONT_SIZE"],
+            font_name = theme[THEME]["GUI_TITLE_FONT"])
+        
+        textTitle.x = (SCREEN_WIDTH / 2) - (textTitle.content_width / 2)
+        textTitle.y = (SCREEN_HEIGHT / 2)
+        textTitle.draw()
 
 class MainMenu(arcade.View):
     """ Class that manages the 'menu' view """
@@ -530,10 +642,14 @@ class MainMenu(arcade.View):
         self.goToGame()
     
     def chooseDifficulty(self):
-        self.v_box.clear()
-        self.manager.remove(self.managerRounds)
-        self.v_box.add(self.button_easy)
-        self.v_box.add(self.button_difficult)
+        if gameState.mode =="vComputer":
+            self.v_box.clear()
+            self.manager.remove(self.managerRounds)
+            self.v_box.add(self.button_easy)
+            self.v_box.add(self.button_difficult)
+        else: 
+            self.manager.disable()
+            self.goToGame()
     
     def chooseRounds(self):
         self.v_box.clear()
@@ -553,6 +669,11 @@ class MainMenu(arcade.View):
         self.chooseRounds()
     
     def goToGame(self):
+        print(f"""
+        Mode: {gameState.mode}
+        Number of rounds: {gameState.numberOfRounds}
+        Difficulty: {gameState.difficulty}
+        """)
         game_view = GameView()
         self.window.show_view(game_view)
 
