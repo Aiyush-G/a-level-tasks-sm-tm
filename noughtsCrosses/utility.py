@@ -1,24 +1,4 @@
 import arcade
-
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-SCREEN_TITLE = "Aiyush Gupta - Tic Tac Toe"
-GUI_TITLE = "Tic-Tac-Toe"
-GUI_TITLE_FONT_SIZE = 50
-GUI_TITLE_FONT = "Kenney Blocks"
-GUI_SUBTITLE_FONT_SIZE = 25
-
-# Player Grid 3X3 with spacing between the cells
-ROW_COUNT = 3
-COLUMN_COUNT = 3
-MARGIN = 10
-WIDTH = 100
-HEIGHT = 100
-LAYER_NAME_GRID = "Grid"
-
-# COLOUR PALLETE -  https://coolors.co/palette/8ecae6-219ebc-023047-ffb703-fb8500
-
-
 theme={
     "original": {
         "BG": (142, 202, 230), # LIGHT BLUE
@@ -68,3 +48,32 @@ theme={
         "GUI_SUBTITLE_FONT_SIZE" : 25,
     },
 }
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+SCREEN_TITLE = "Aiyush Gupta - Tic Tac Toe"
+GUI_TITLE = "Tic-Tac-Toe"
+GUI_TITLE_FONT_SIZE = 50
+GUI_TITLE_FONT = "Kenney Blocks"
+GUI_SUBTITLE_FONT_SIZE = 25
+
+# Player Grid 3X3 with spacing between the cells
+ROW_COUNT = 3
+COLUMN_COUNT = 3
+MARGIN = 10
+WIDTH = 100
+HEIGHT = 100
+LAYER_NAME_GRID = "Grid"
+
+# COLOUR PALLETE -  https://coolors.co/palette/8ecae6-219ebc-023047-ffb703-fb8500
+
+THEME = "blues"
+
+BACKGROUND_COLOR = theme[THEME]["BG"]
+FRAME_COLOR = theme[THEME]["FRAME_COLOUR"]
+STARTING_CELL_COLOUR = theme[THEME]["STARTING_CELL_COLOUR"]
+P1_COLOUR = theme[THEME]["P1_COLOUR"]
+P2_COLOUR = theme[THEME]["P2_COLOUR"]
+TITLE_COLOUR = theme[THEME]["TITLE_COLOUR"]
+SUBTITLE_COLOUR = theme[THEME]["SUBTITLE_COLOUR"]
+WINNING_COLOUR = theme[THEME]["WINNING_COLOUR"]

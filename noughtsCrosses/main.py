@@ -11,18 +11,6 @@ import random # For the computers turn
 ###### Implement a simulated click
 ### Implement difficulty
 
-THEME = "blues"
-
-BACKGROUND_COLOR = theme[THEME]["BG"]
-FRAME_COLOR = theme[THEME]["FRAME_COLOUR"]
-STARTING_CELL_COLOUR = theme[THEME]["STARTING_CELL_COLOUR"]
-P1_COLOUR = theme[THEME]["P1_COLOUR"]
-P2_COLOUR = theme[THEME]["P2_COLOUR"]
-TITLE_COLOUR = theme[THEME]["TITLE_COLOUR"]
-SUBTITLE_COLOUR = theme[THEME]["SUBTITLE_COLOUR"]
-WINNING_COLOUR = theme[THEME]["WINNING_COLOUR"]
-
-# Player turn: 0/1
 
 class GridCell(arcade.SpriteSolidColor):
     def __init__(self, WIDTH, HEIGHT, COLOR, row, column):
@@ -92,7 +80,7 @@ class GameState():
         self.trackedGridClickedBy = None
         self.won = False
         self.wonBy = False
-        self.round = 1
+        self.round = 0
         self.backingTack = arcade.Sound(":resources:music/funkyrobot.mp3")
         self.backingTack.play(loop=True)
 
@@ -121,7 +109,6 @@ class GameState():
         # Swaps player turns from 1 to 2
         self.turn = 0 if self.turn else 1
         if self.debug: print(f"\n Turn: {self.turn}")
-
 
 class GameView(arcade.View):
     """
