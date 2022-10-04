@@ -330,17 +330,90 @@ class GameView(arcade.View):
     def computerTurn(self):
         """ Simulated playing via the computer """
         # Requirements:
+        # EASY:
         # Click a random cell
         # Click a cell that isn't already clicked
 
+        # DIFFICULT: 
         # One way to tackle the difficult mode could be to use a minimax function
+        # However, that results in an always draw or win for the CPU, therefore, 
+        # by implementing common tic-tac-toe strategy with some randomness could make 
+        # this more fair.
+        # IE. take corners first then random
+
+        
         if not gameState.won:
             chosenCell = False
-            while not chosenCell:
-                # print(self.grid_sprites[0][0].state)
-                randCell = random.choice(self.scene[LAYER_NAME_GRID])
-                if randCell.state == "notClicked":
-                    chosenCell = True
+            if gameState.difficulty == "easy": # Any random cell
+                while not chosenCell:
+                    # print(self.grid_sprites[0][0].state)
+                    randCell = random.choice(self.scene[LAYER_NAME_GRID])
+                    if randCell.state == "notClicked":
+                        chosenCell = True
+            elif gameState.difficulty == "difficult": # Corner cells first
+                # Indexes order for self.scene[LAYER_NAME_GRID].state are as follows:
+                # 0 1 2
+                # 3 4 5 
+                # 6 7 8 
+
+                # If two corners are now occupied by CPU:
+                # 0, 2 -> Select 1
+                # 0, 6 -> Select 3
+                # 2, 8 -> Select 5
+                # 6, 2 -> Select 4
+                # 8,0  -> Select 4
+
+
+                cornerCellIndexes = [0, 8, 6, 2]
+                currIndex = 0
+                cornerCellsOccupiedBy = [] # cellIndex, whoBy
+                occupyCornerCell, goForWin = True, False
+                twoCornerCellsOccupied, twoCells = 0, []
+
+
+                for turn in range(0, len(cornerCellIndexes)):
+                    # Not the CPU is clicked by: 1 not 0 
+                    cornerCellsOccupiedBy.append([cornerCellIndexes[turn],self.scene[LAYER_NAME_GRID][turn].clickedBy]) # cellIndex, whoBy
+                for gridC in cornerCellsOccupiedBy:
+                    print(f"GRIDC: {gridC}")
+                    if str(gridC[1]) == "1": # Player 1
+                        twoCornerCellsOccupied+= 1
+                        twoCells.append(gridC[0]) # Index of the grid
+                if twoCornerCellsOccupied == 2: 
+                    goForWin = True
+                    occupyCornerCell = False
+
+                if goForWin:
+                    print(F"TWO CELLS: {twoCells}")
+                    if twoCells == [0,2]: randCell = self.scene[LAYER_NAME_GRID][1]
+                    elif twoCells == [0,6]: randCell = self.scene[LAYER_NAME_GRID][3]
+                    elif twoCells == [2,8]: randCell = self.scene[LAYER_NAME_GRID][5]
+                    elif twoCells == [6,2]: randCell = self.scene[LAYER_NAME_GRID][4]
+                    elif twoCells == [8,0]: randCell = self.scene[LAYER_NAME_GRID][4]
+                    print(f"INDEX TO BE CLICKED => TWO CORENER CELLS SELECTED: {self.scene[LAYER_NAME_GRID].index(randCell)}")
+
+                    # If the winning cell is occupied then select another random cell
+                    if not randCell.state == "notClicked": # AKA ITS OCCUPIED
+                        occupyCornerCell = True
+
+                    # If cell is occupied then occupyCornerCell = True => it will select a random cell
+                if occupyCornerCell:
+                    while not chosenCell:
+                        randCell = self.scene[LAYER_NAME_GRID][cornerCellIndexes[currIndex]]
+                        if randCell.state == "notClicked":
+                            chosenCell = True
+                        else:
+                            if (currIndex + 1)> 3:
+                                randCell = random.choice(self.scene[LAYER_NAME_GRID])
+                                if randCell.state == "notClicked":
+                                    chosenCell = True
+                            else:
+                                currIndex += 1
+                                print(f"CurrIndex {currIndex}")
+                
+                
+
+
             
             randCell.clicked()
             gameState.incrementTurn()
@@ -377,6 +450,8 @@ class GameView(arcade.View):
         # DEBUG PRETTY PRINT
         #pprint(gameState.trackedGridState)
         #pprint(gameState.trackedGridClickedBy)
+
+        
     
     def calculateWin(self):
         """
