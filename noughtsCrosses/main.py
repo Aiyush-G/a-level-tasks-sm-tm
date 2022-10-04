@@ -572,9 +572,45 @@ class GameEnd(arcade.View):
             theme[THEME]["GUI_TITLE_FONT_SIZE"],
             font_name = theme[THEME]["GUI_TITLE_FONT"])
         
+        score1Text = arcade.Text(f"P1 Score: {gameState.p0Score}",
+            140,
+            (SCREEN_HEIGHT / 2) - 60,
+            theme[THEME]["SUBTITLE_COLOUR"],
+            theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
+            font_name = theme[THEME]["GUI_SUBTITLE_FONT"])
+        
+        score2Text = arcade.Text(f"P2 Score: {gameState.p1Score}",
+            140,
+            (SCREEN_HEIGHT / 2) - 90,
+            theme[THEME]["SUBTITLE_COLOUR"],
+            theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
+            font_name = theme[THEME]["GUI_SUBTITLE_FONT"])
+        
+        gameModeText = arcade.Text(f"Mode: {gameState.mode}",
+            140,
+            (SCREEN_HEIGHT / 2) - 120,
+            theme[THEME]["SUBTITLE_COLOUR"],
+            theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
+            font_name = theme[THEME]["GUI_SUBTITLE_FONT"])
+        
+        score1Text.x = (SCREEN_WIDTH / 2) - (score1Text.content_width / 2)
+        score2Text.x = (SCREEN_WIDTH / 2) - (score2Text.content_width / 2)
+        gameModeText.x = (SCREEN_WIDTH / 2) - (gameModeText.content_width / 2)
+
         textTitle.x = (SCREEN_WIDTH / 2) - (textTitle.content_width / 2)
         textTitle.y = (SCREEN_HEIGHT / 2)
+        
         textTitle.draw()
+        score1Text.draw()
+        score2Text.draw()
+        gameModeText.draw()
+    
+    def on_mouse_press(self, x, y, button, key_modifiers):
+        """
+        Called when the user presses a mouse button.
+        """
+        arcade.exit()
+
 
 class MainMenu(arcade.View):
     """ Class that manages the 'menu' view """
@@ -767,6 +803,7 @@ class MainMenu(arcade.View):
             theme[THEME]["TITLE_COLOUR"],
             theme[THEME]["GUI_TITLE_FONT_SIZE"],
             font_name = theme[THEME]["GUI_TITLE_FONT"])
+        
         
         textTitle.x = (SCREEN_WIDTH / 2) - (textTitle.content_width / 2)
         textTitle.y = (SCREEN_HEIGHT / 2)
