@@ -87,6 +87,28 @@ Example of *abstracted* main menu algorithm:
 
 ![wer](/Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/MainMenuFlowchart.drawio.png)
 
+#### Computer vs Player Algorithm
+
+To tackle this problem I first completed some research and discovered the `Minimax` algorithm however, I discovered that this meant that the result was always a draw or loss for the oppononent. As a game, I felt that this algorithm was to harsh and resulted in an extreme result. Consequently, I analysed how the minimax algorithm worked and found that it usually targeted two of the corners and then aimed to block the opponents next move.  
+
+In my adaption of the now non-recursive ~~"minimax"~~ algorithm, the following happened.
+
+Pseudocode: *In reality its slightly more bulky*
+
+```py
+def computerTurn(...):
+    cell = CHOOSE from AVAILABLE_CORNERS
+    if not AVALIABLE_CORNERS:
+        cell = CHOOSE from random CELL
+    return cell
+```
+
+# Top-Down Decomposition
+
+<img title="" src="file:///Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/ticTacToe-StructureDiagram.drawio%2011.57.18.png" alt="here" data-align="center">
+
+# 
+
 # Additional Features
 
 - Music

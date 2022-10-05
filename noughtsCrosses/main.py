@@ -1,18 +1,13 @@
-from pprint import pprint # Debugging
+from pprint import pprint   # Debugging
 import arcade
 import arcade.gui
 import os
-from utility import * # My own library for managing theming
-import random # For the computers turn
-
-### TODO:
-### Implement Rounds DONE
-### Implement Computer vs 1
-###### Implement a simulated click
-### Implement difficulty
+from utility import *       # My own library for managing theming
+import random               # For the computers turn
 
 
 class GridCell(arcade.SpriteSolidColor):
+    """ Class that represents a single grid cell by tracking its' state, clicked by, colour etc..."""
     def __init__(self, WIDTH, HEIGHT, COLOR, row, column):
         super().__init__(WIDTH, HEIGHT, COLOR)
 
@@ -23,27 +18,32 @@ class GridCell(arcade.SpriteSolidColor):
         print("END DEBUG")
         """
 
-        self.clickedBy = None
-        self.row = row
-        self.column = column
-        self.state = "notClicked"
-        self.winningCell = False
-        self.animationFinished = False
+        self.clickedBy = None               # Clicked By: P1 / P2 / Computer
+        self.row = row                      # Any value =< ROW_COUNT
+        self.column = column                # Any value =< COLUMN_COUNT
+        self.state = "notClicked"           # State: notClicked, occupied
+        self.winningCell = False            # Allows the state change to be animated
+        self.animationFinished = False      # Helper variable for animations
 
     def reset(self):
+        """ To be called when the grid is redrawn to reset necessary variable values"""
         self.color = self.COLOR
         self.winningCell = False
     
     def isWinningCell(self):
+        """ Returns value of variable: Utility function, this could be reimplemented as an anonomous function"""
         if self.winningCell:
             return True
     
     def update_animation(self, delta_time):
         if self.winningCell:
-            my_target_color = WINNING_COLOUR # GREEN
-            transition_speed = 0.1
+            my_target_color = WINNING_COLOUR # Contains RGB 
+            transition_speed = 0.1           # Max value is 1
             current_color = self.color
             
+            # Interpolation between the two colours
+            # Color = R, G, B
+            # Interpolation: transition speed * (end colour - start color)
             colour = (
                 current_color[0] + (transition_speed * (my_target_color[0] - current_color[0])), 
                 current_color[1] + (transition_speed * (my_target_color[1] - current_color[1])), 
@@ -54,6 +54,10 @@ class GridCell(arcade.SpriteSolidColor):
 
 
     def occupied(self):
+        """ 
+        Returns state of cell: helper function
+        Print statements here are for debugging
+        """
         if self.state == "notClicked": 
             print("Not occupied")
             return False
@@ -62,6 +66,11 @@ class GridCell(arcade.SpriteSolidColor):
             return True
 
     def clicked(self):
+        """ 
+        When a cell is clicked, if it is clicked by player 1 then change to their colour, else, player 2 colour.
+        Update who the cell was clicked by
+        Update the state of the cell to occupied
+        """
         print(f"Row {self.row}, Column {self.column}")
 
         if gameState.turn == 0: # Player 1
@@ -73,32 +82,41 @@ class GridCell(arcade.SpriteSolidColor):
         self.state = "occupied"
 
 class GameState():
+    """
+    Class that holds the "global" variables that should be shared between the entire application
+    Ie. turn, grid etc...
+    """
     def __init__(self):
-        self.turn = None
-        self.debug = True # Console output variable
-        self.trackedGridState = None
-        self.trackedGridClickedBy = None
+        self.turn = None                    # 0 (Player 1) / 1 (Player 2)
+        self.debug = True                   # Console output variable
+        self.trackedGridState = None        # Unfortunately a limitation of the library is that there is no way that sprite 
+        self.trackedGridClickedBy = None    # groups can be stored in 2D arrays, therefore, a separate array has to be instantiated
         self.won = False
         self.wonBy = False
         self.round = 0
         self.backingTack = arcade.Sound(":resources:music/funkyrobot.mp3")
         self.backingTack.play(loop=True)
 
-        self.p0Score = 0
-        self.p1Score = 0
+        self.p0Score = 0                    # Tracks the player score, 
+        self.p1Score = 0                    # Player 1 - Either human or CPU
 
-        # GUI
-        self.mode = "1v1" # vComputer / 1v1
-        self.numberOfRounds = "5" # 3 / 5 / 10
-        self.difficulty = "easy" # easy / difficult
+        # GUI                               MAIN MENU OPTIONS
+        self.mode = "1v1"                   # vComputer / 1v1
+        self.numberOfRounds = "5"           # 3 / 5 / 10
+        self.difficulty = "easy"            # easy / difficult
     
     def reset(self):
+        # Obselete function but kept in main code as reference, replaced by setup
         # Call when going back to the menu alongisde setup
         self.p0Score = 0 
         self.p1Score = 0
     
-    # For next round
+    
     def setup(self):
+        """
+        When the gameScreen is first shown, reset the variable values. When a completely new game is created, this function
+        is called again to reset those values.
+        """
         # AFTER WINNING
         self.won = False # Sets the true when the game has been won
         self.wonBy = False
@@ -131,9 +149,8 @@ class GameView(arcade.View):
         self.grid_sprites = None
 
         # Audio
-        #self.backingTrack = None
-        self.winTrack = None
-        self.clickTrack = None
+        self.winTrack = None    # To play when a player has won
+        self.clickTrack = None  # To play when a cell has been clicked
 
         # State Management
         gameState.turn = None
@@ -141,7 +158,7 @@ class GameView(arcade.View):
     def setup(self):
         """ Game Setup, call function to restart / start (from scratch) the game"""
 
-        # Cameras
+        # Cameras - each view has a different camera, this means that the screen items are drawn in different orders for z-index.
         self.camera = arcade.Camera(self.window.width, self.window.height)
         self.gui_camera = arcade.Camera(self.window.width, self.window.height)
         
@@ -151,6 +168,11 @@ class GameView(arcade.View):
         # Create Sprite Lists
         self.scene.add_sprite_list(LAYER_NAME_GRID, self.grid_sprite_list)
 
+        # Grid sprite list contains an arcade reference to all the cells within the grid so that they can be batch manipulated
+        # this was instructed by the docs, however, I believe storing them in a normal 2D array could work better.
+        # The grid_sprites was this newer implementation that allowed the sprites to be stored in a 2d array representing their
+        # position within the naught and crosses grid. Both were kept for different usage throughout the program, they are both
+        # usually reference together.
         self.grid_sprite_list = arcade.SpriteList()
         self.grid_sprites = []
         gameState.turn = 0
@@ -164,20 +186,21 @@ class GameView(arcade.View):
         # Grid Creation
         # Stores grid in grid_spire_list and grid_sprites (as representational 2D array)
         # Cells stored as Sprites
+        # Dynamic Creation fo a grid depending upon the number of rows / columns
+        
         for row in range(ROW_COUNT):
             self.grid_sprites.append([])
             for column in range(COLUMN_COUNT):
-                x = column * (WIDTH + MARGIN) + (WIDTH / 2 + MARGIN)
+                x = column * (WIDTH + MARGIN) + (WIDTH / 2 + MARGIN)                # X and Y coords generated dynamically
                 y = row * (HEIGHT + MARGIN) + (HEIGHT / 2 + MARGIN)
                 # Create each sprite with a default bg colour
-                #sprite = arcade.SpriteSolidColor(WIDTH, HEIGHT, MEDIUM_BLUE)
                 sprite = GridCell(WIDTH, HEIGHT, STARTING_CELL_COLOUR, row, column)
                 sprite.center_x = x
                 sprite.center_y = y
-                #self.grid_sprite_list.append(sprite)
                 self.scene.add_sprite(LAYER_NAME_GRID, sprite)
                 self.grid_sprites[row].append(sprite)
         
+        # Positioning
         self.scene[LAYER_NAME_GRID].move(
             (SCREEN_WIDTH // 2) - (COLUMN_COUNT*(WIDTH+MARGIN)) // 2, 
             (SCREEN_HEIGHT // 2) - (ROW_COUNT*(HEIGHT+MARGIN)) // 2
@@ -194,7 +217,7 @@ class GameView(arcade.View):
         self.setup()
     
     def on_draw(self):
-        """ Render the screen"""
+        """ Render the screen GUI"""
         # Clear the screen to the background colour
         self.clear()
 
@@ -207,6 +230,7 @@ class GameView(arcade.View):
         BG / TITLE / ROUND etc..
         """
 
+        # Background to the grid cells
         arcade.draw_rectangle_filled(
             center_x = self.scene[LAYER_NAME_GRID].center[0], 
             center_y = self.scene[LAYER_NAME_GRID].center[1], 
@@ -215,6 +239,8 @@ class GameView(arcade.View):
             color = FRAME_COLOR # (182, 213, 227) OLD
         )
         
+        # Text items, the theme that they are referencing is pulled from utils.py, a basic API has been constructed
+        # to provide theming which could be implemented in a later version of naughts and crosses.
         textTitle = arcade.Text(theme[THEME]["GUI_TITLE"],
                          140,
                          SCREEN_HEIGHT - 80,
@@ -222,6 +248,7 @@ class GameView(arcade.View):
                          theme[THEME]["GUI_TITLE_FONT_SIZE"],
                          font_name = theme[THEME]["GUI_TITLE_FONT"],)
         
+        # Player X: Turn
         textPlayer = arcade.Text(f"Player: {gameState.turn + 1}",
                          300,
                          70,
@@ -229,6 +256,7 @@ class GameView(arcade.View):
                          theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
                          font_name = theme[THEME]["GUI_SUBTITLE_FONT"])
 
+        # Rounds: 0 --> gameState.numberOfRounds
         textRound = arcade.Text(f"Round {gameState.round}",
                          320,
                          30,
@@ -236,6 +264,7 @@ class GameView(arcade.View):
                          theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
                          font_name=theme[THEME]["GUI_SUBTITLE_FONT"])
         
+        # Player X Score
         p0Score = arcade.Text(f"P1 Score: {gameState.p0Score}",
                          25,
                          70,
@@ -243,6 +272,7 @@ class GameView(arcade.View):
                          theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
                          font_name=theme[THEME]["GUI_SUBTITLE_FONT"])
         
+        # Depending on whether the CPU player is enabled the text varies: "CPU" / "P2" + Score: SCORE
         if gameState.mode == "vComputer": player = "CPU"
         else: player = "P2"
         p1Score = arcade.Text(f"{player} Score: {gameState.p1Score}",
@@ -253,10 +283,12 @@ class GameView(arcade.View):
                          font_name=theme[THEME]["GUI_SUBTITLE_FONT"])
         
         # Place text in the center of the screen: x start = (screen width / 2) - (content width / 2)
+        # Positioning
         textRound.x = (SCREEN_WIDTH / 2) - (textRound.content_width / 2)
         textPlayer.x = (SCREEN_WIDTH / 2) - (textPlayer.content_width / 2)
         textTitle.x = (SCREEN_WIDTH / 2) - (textTitle.content_width / 2)
 
+        # Draw all items
         textRound.draw()
         textPlayer.draw()
         textTitle.draw()
@@ -271,13 +303,13 @@ class GameView(arcade.View):
         self.scene.draw()
         # self.grid_sprite_list.draw()
 
-        
-        """
-        ADD GUI CODE HERE
-        """
-    
     def on_update(self, delta_time):
         """ Movement / Game Logic"""
+
+        # FLAG is used since if all the cells are occupied with no winner then the round needs to be incremented with no 
+        # change in score. 
+        # BUG -> FEATURE: if the winner makes their winning move in the last possible cell on the grid then they get double
+        # points. At first this was a bug, however, it adds more skill to winning the game if you are behind on points. 
         allOccupied = True
         for sprite in self.scene[LAYER_NAME_GRID]:
             sprite.isWinningCell()
@@ -285,6 +317,8 @@ class GameView(arcade.View):
             # If the grid is filled but there is no wining state then move onto the next round
             if sprite.state == "notClicked":
                 allOccupied = False 
+        
+        # Move onto next round if grid is full with some cleanup
         if allOccupied:
             self.trackGrid()
             #self.calculateWin()
@@ -292,6 +326,7 @@ class GameView(arcade.View):
             self.noWinTrack.play()
             self.nextRound()
         
+        # Computers turn after the player has "played"
         if gameState.mode == "vComputer":
             if gameState.turn == 1:
                 self.computerTurn()
@@ -309,7 +344,10 @@ class GameView(arcade.View):
 
         # If the game has been won by someone then go to the next round
         if not gameState.won:
-    
+            
+            # Get a list, of the cells pressed at one time (hopefully just contains one cell)
+            # If that cell has not been clicked before, then simulate a click on that cell 
+            # and move to the next turn, change its' colour and play a sound.
             clicked = arcade.get_sprites_at_point((x, y), self.scene[LAYER_NAME_GRID])
             if clicked:
                 for cell in clicked:     
@@ -320,11 +358,14 @@ class GameView(arcade.View):
                         gameState.incrementTurn()
                     else:
                         print("Cell Occupied")
+            
+            # Updates both references of the grid: 2D & 1D
             self.trackGrid()
             self.calculateWin()
 
             
         else:
+            # If the game has been won then move to next round
             self.nextRound()
     
     def computerTurn(self):
@@ -341,7 +382,7 @@ class GameView(arcade.View):
         # this more fair.
         # IE. take corners first then random
 
-        
+        # If game isn't won and game mode is easy then just select and click a random cell, loop if the cell is occupied already.
         if not gameState.won:
             chosenCell = False
             if gameState.difficulty == "easy": # Any random cell
@@ -350,6 +391,7 @@ class GameView(arcade.View):
                     randCell = random.choice(self.scene[LAYER_NAME_GRID])
                     if randCell.state == "notClicked":
                         chosenCell = True
+
             elif gameState.difficulty == "difficult": # Corner cells first
                 # Indexes order for self.scene[LAYER_NAME_GRID].state are as follows:
                 # 0 1 2
@@ -370,19 +412,21 @@ class GameView(arcade.View):
                 occupyCornerCell, goForWin = True, False
                 twoCornerCellsOccupied, twoCells = 0, []
 
-
+                # Get a list of all the corner cells
                 for turn in range(0, len(cornerCellIndexes)):
                     # Not the CPU is clicked by: 1 not 0 
                     cornerCellsOccupiedBy.append([cornerCellIndexes[turn],self.scene[LAYER_NAME_GRID][turn].clickedBy]) # cellIndex, whoBy
+                # Check if two corners are occupied by the CPU, if so then it simulates a click of any other unocuppied cell.
                 for gridC in cornerCellsOccupiedBy:
                     print(f"GRIDC: {gridC}")
-                    if str(gridC[1]) == "1": # Player 1
+                    if str(gridC[1]) == "1":            # Player 1
                         twoCornerCellsOccupied+= 1
-                        twoCells.append(gridC[0]) # Index of the grid
+                        twoCells.append(gridC[0])       # Index of the grid
                 if twoCornerCellsOccupied == 2: 
                     goForWin = True
                     occupyCornerCell = False
 
+                # If two corner cells occupied by the CPU then go for the winning combination
                 if goForWin:
                     print(F"TWO CELLS: {twoCells}")
                     if twoCells == [0,2]: randCell = self.scene[LAYER_NAME_GRID][1]
@@ -396,7 +440,8 @@ class GameView(arcade.View):
                     if not randCell.state == "notClicked": # AKA ITS OCCUPIED
                         occupyCornerCell = True
 
-                    # If cell is occupied then occupyCornerCell = True => it will select a random cell
+                # If cell is occupied then occupyCornerCell = True => it will select any random cell
+                # Attempt to occupy any corner cell.
                 if occupyCornerCell:
                     while not chosenCell:
                         randCell = self.scene[LAYER_NAME_GRID][cornerCellIndexes[currIndex]]
@@ -410,11 +455,8 @@ class GameView(arcade.View):
                             else:
                                 currIndex += 1
                                 print(f"CurrIndex {currIndex}")
-                
-                
-
-
             
+            # Click cell, increment turn, track 2D & 1D grid
             randCell.clicked()
             gameState.incrementTurn()
 
@@ -429,7 +471,7 @@ class GameView(arcade.View):
             trackedGridState.append([])
             for column in range(COLUMN_COUNT):
                 trackedGridState[row].append(self.grid_sprites[row][column].state)
-        #trackedGridState.reverse() ############
+       
 
         # Tracks who the grid is clicked by
         trackedGridClickedBy = []
@@ -437,22 +479,11 @@ class GameView(arcade.View):
             trackedGridClickedBy.append([])
             for column in range(COLUMN_COUNT):
                 trackedGridClickedBy[row].append(self.grid_sprites[row][column].clickedBy)
-        #trackedGridClickedBy.reverse() #########
-
+        
+        # Update in global state
         gameState.trackedGridState = trackedGridState
         gameState.trackedGridClickedBy = trackedGridClickedBy
-        
-        #print("\n")
-        #gameState.trackedGridState.reverse()
-        #pprint(gameState.trackedGridState)
-        #print("\n")
 
-        # DEBUG PRETTY PRINT
-        #pprint(gameState.trackedGridState)
-        #pprint(gameState.trackedGridClickedBy)
-
-        
-    
     def calculateWin(self):
         """
         Method to analyse the current grid configuration to find whether any combinations are winning: 3 (or X) in a row.
@@ -465,28 +496,26 @@ class GameView(arcade.View):
 
         """
         ####
-        #### IMPLEMENT WINNING SQUARE ATTRIBUTE TO EACH GRID CELL
+        #### IMPLEMENTED WINNING SQUARE ATTRIBUTE TO EACH GRID CELL
         ####
         ####
 
         ## IMPLEMENTED ROW CHECKING
         gcb = gameState.trackedGridClickedBy
 
+        # Checks each row to see if it is occupied by the same player
+        # Calls hasWon when a winning row has been found
         for row in gcb:
             if all(x==row[0] for x in row) and row[0] != None:
-                #print(f"3 in row on {gcb.index(row)} won by player {row[0]}")
                 self.hasWon(_type = "row", pos = gcb.index(row), winner = row[0])
-                
-                # self.grid_sprites[gcb.index(row)][0].color = arcade.color.GREEN
-                # self.grid_sprites[gcb.index(row)][1].color = arcade.color.GREEN
-                # self.grid_sprites[gcb.index(row)][2].color = arcade.color.GREEN
-
+             
                 # Updates the winning cell property so the cells can be highlighted later
                 for index in range(0, ROW_COUNT):
                     self.grid_sprites[gcb.index(row)][index].winningCell = True
                     
 
-        ### IMPLEMENTED COLUMN CHECKING
+        ### IMPLEMENTED COLUMN CHECKING, itterates through each column to check if it is occupied by the same player
+        # Calls hasWon function when a winning column found
         for i in gcb:
             vals, currColumn = [], gcb.index(i)
             for j in range(0,len(i)):
@@ -494,7 +523,7 @@ class GameView(arcade.View):
                 vals.append(curr)
             if all(x==vals[0] for x in vals) and vals[0] != None: 
                 print(f"Column {currColumn} has 3 in a row")
-                self.hasWon(_type = "column", pos = currColumn, winner = vals[0])
+                self.hasWon(_type = "column", pos = currColumn, winner = vals[0])   
 
                 # Updates the winning cell property so the cells can be highlighted later
                 for index in range(0, COLUMN_COUNT):
@@ -502,11 +531,11 @@ class GameView(arcade.View):
 
             vals.clear() # Clear the temporary list containing column cell values
         
-        # IMPLEMENT DIAGONAL CHECKING - NOT DYNAMIC RIGHT NOW AND ONLY WORKS WITH 3X3
+        # IMPLEMENTED DIAGONAL CHECKING - NOT DYNAMIC RIGHT NOW AND ONLY WORKS WITH 3X3
         # DIAGONAL L2R
         if gcb[0][0] != None:
-            if gcb[0][0] == gcb[1][1] and gcb[0][0] == gcb[2][2]:
-                #print("DIAGONAL 3 X 3 LTR")
+            if gcb[0][0] == gcb[1][1] and gcb[0][0] == gcb[2][2]: # Combination of diagonal cells
+                
                 self.hasWon(_type = "DIAGONAL", pos = "3 X 3 LTR", winner = gcb[0][0])
 
                 # Updates the winning cell property so the cells can be highlighted later
@@ -514,10 +543,10 @@ class GameView(arcade.View):
                 self.grid_sprites[1][1].winningCell = True
                 self.grid_sprites[2][2].winningCell = True
         
-        
+        # RTL diagonal checking, hardcoded combinations, however, this could be done dynamically at a later stage.
         if gcb[0][2] != None:
             if gcb[0][2] == gcb[1][1] and gcb[0][2] == gcb[2][0]:
-                #print("DIAGONAL 3 X 3 RTL")
+                
                 self.hasWon(_type = "DIAGONAL", pos = "3 X 3 RTL", winner = gcb[0][2])
                 self.grid_sprites[0][2].winningCell = True
                 self.grid_sprites[1][1].winningCell = True
@@ -525,6 +554,7 @@ class GameView(arcade.View):
 
     
     def hasWon(self, _type, pos, winner): # Column, Row, Diagonal / row 1,2,3, etc... / 0,1
+        """ When the player has won, reflect this change in the game state alongside the winner, increase their score by 1"""
         print(f"3 in a row on {_type} {pos} by player {winner} aka ({winner+1})")
         gameState.won = True
         gameState.wonBy = winner
@@ -533,9 +563,14 @@ class GameView(arcade.View):
         elif int(winner) == 1:
             gameState.p1Score += 1
 
+        # Winning sound
         self.winTrack.play()
     
     def nextRound(self):
+        """ 
+        Increments the game round by 1, if the next game round is greater than the number selected by the player in 
+        the starting menu then change the game view to the GameEnd() View
+        """
         gameState.round += 1
         print(f"Round: {gameState.round}")
         print(f"Total number of rounds: {gameState.numberOfRounds}")
@@ -544,7 +579,7 @@ class GameView(arcade.View):
             print(f"{gameState.numberOfRounds} < {gameState.round}")
             end_view = GameEnd()
             self.window.show_view(end_view)
-        else:
+        else: # If increment to next game then reset the game view and show it to the user
             gameState.setup()
             game_view = GameView()
             self.window.show_view(game_view)
@@ -552,16 +587,18 @@ class GameView(arcade.View):
 class GameEnd(arcade.View):
     def __init__(self):
         super().__init__()
+        # Set the camera to the entire screen
         self.gui_camera = arcade.Camera(self.window.width, self.window.height)
     
     def on_draw(self):
         """
+        Shows:
         TITLE
         WINNER
         MODE 
         DIFFICULTY
         """
-
+        # On every draw call clear the screen
         self.clear()
         self.gui_camera.use()
 
@@ -572,6 +609,7 @@ class GameEnd(arcade.View):
             theme[THEME]["GUI_TITLE_FONT_SIZE"],
             font_name = theme[THEME]["GUI_TITLE_FONT"])
         
+        # P1 End Score
         score1Text = arcade.Text(f"P1 Score: {gameState.p0Score}",
             140,
             (SCREEN_HEIGHT / 2) - 60,
@@ -579,6 +617,7 @@ class GameEnd(arcade.View):
             theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
             font_name = theme[THEME]["GUI_SUBTITLE_FONT"])
         
+        # P2 End Score
         score2Text = arcade.Text(f"P2 Score: {gameState.p1Score}",
             140,
             (SCREEN_HEIGHT / 2) - 90,
@@ -586,6 +625,7 @@ class GameEnd(arcade.View):
             theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
             font_name = theme[THEME]["GUI_SUBTITLE_FONT"])
         
+        # Game Mode: 1V1 / 1 vs CPU
         gameModeText = arcade.Text(f"Mode: {gameState.mode}",
             140,
             (SCREEN_HEIGHT / 2) - 120,
@@ -593,6 +633,7 @@ class GameEnd(arcade.View):
             theme[THEME]["GUI_SUBTITLE_FONT_SIZE"],
             font_name = theme[THEME]["GUI_SUBTITLE_FONT"])
         
+        # Positioning
         score1Text.x = (SCREEN_WIDTH / 2) - (score1Text.content_width / 2)
         score2Text.x = (SCREEN_WIDTH / 2) - (score2Text.content_width / 2)
         gameModeText.x = (SCREEN_WIDTH / 2) - (gameModeText.content_width / 2)
@@ -600,6 +641,7 @@ class GameEnd(arcade.View):
         textTitle.x = (SCREEN_WIDTH / 2) - (textTitle.content_width / 2)
         textTitle.y = (SCREEN_HEIGHT / 2)
         
+        # Draw all the items
         textTitle.draw()
         score1Text.draw()
         score2Text.draw()
@@ -607,7 +649,7 @@ class GameEnd(arcade.View):
     
     def on_mouse_press(self, x, y, button, key_modifiers):
         """
-        Called when the user presses a mouse button.
+        Called when the user presses a mouse button to quit the application
         """
         arcade.exit()
 
@@ -619,6 +661,7 @@ class MainMenu(arcade.View):
     def __init__(self):
         super().__init__()
 
+        # Camera for which the GUI will be drawn onto
         self.gui_camera = arcade.Camera(self.window.width, self.window.height)
 
         # Create and enable the UIManager
@@ -664,7 +707,7 @@ class MainMenu(arcade.View):
             text_color=TITLE_COLOUR
             )
         self.v_box_rounds_text.add(self.ui_text_label)
-
+        # Position the rounds
         self.managerRounds = arcade.gui.UIAnchorWidget(
                 anchor_x="center_x",
                 anchor_y="center_y",
@@ -672,19 +715,22 @@ class MainMenu(arcade.View):
                 align_x=-10,
                 child=self.v_box_rounds_text)
 
+        # Button for 3 rounds
         self.button_round_3 = arcade.gui.UIFlatButton(
             text="3", width=100, style = buttonStyle
         )
 
+        # Button for 5 rounds
         self.button_round_5 = arcade.gui.UIFlatButton(
             text="5", width=100, style = buttonStyle
         )
 
+        # Button for 10 rounds
         self.button_round_10 = arcade.gui.UIFlatButton(
             text="10", width=100, style = buttonStyle
         )
 
-        ### Choose Difficulty
+        ### Choose Difficulty - Easy / Difficult
         self.button_easy = arcade.gui.UIFlatButton(
             text="easy", width=200, style = buttonStyle
         )
@@ -693,12 +739,13 @@ class MainMenu(arcade.View):
             text="difficult", width=200, style = buttonStyle
         )
 
-        # VBOX Intial 
+        # VBOX Intial  -  Add the mode widgets
         self.v_box.add(self.button_1v1)
         self.v_box.add(self.button_vComputer)
 
 
         # Add a hook to run when we click on the button.
+        # There must be a more succinct way to do this, however, this is a new library for me :(
         self.button_1v1.on_click = self.button_1v1_clicked
         self.button_vComputer.on_click = self.button_vComputer_clicked
 
@@ -718,28 +765,38 @@ class MainMenu(arcade.View):
                 child=self.v_box)
         )
     
-    # There must be a more efficient way to do this ... :(
+    """There must be a more efficient way to do this
+    Each function acts a hook for the callback method and updates the game state based upon the function title.
+    Ie. round3 -> gameState.round = 3 
+    
+    """
     def round3(self, event): 
+        # Set 3 Rounds
         gameState.numberOfRounds = 3
         self.chooseDifficulty()
     def round5(self, event): 
+        # Set 5 Rounds
         gameState.numberOfRounds = 5
         self.chooseDifficulty()
     def round10(self, event): 
+        # Set 10 rounds
         gameState.numberOfRounds = 10
         self.chooseDifficulty()
     
     def choseEasy(self, event):
+        # Set easy mode
         gameState.difficulty = "easy"
         self.manager.disable()
         self.goToGame()
     
     def choseDifficult(self, event):
+        # Set difficult mode
         gameState.difficulty = "difficult"
         self.manager.disable()
         self.goToGame()
     
     def chooseDifficulty(self):
+        # If the mode is against the computer then choose the difficult, if it is 1V1 then difficulty is obselete.
         if gameState.mode =="vComputer":
             self.v_box.clear()
             self.manager.remove(self.managerRounds)
@@ -750,6 +807,7 @@ class MainMenu(arcade.View):
             self.goToGame()
     
     def chooseRounds(self):
+        # Manager to display the number of rounds buttons: 3 / 5 / 10
         self.v_box.clear()
         self.v_box.vertical = False
         # self.v_box.add(self.ui_text_label)
@@ -759,14 +817,17 @@ class MainMenu(arcade.View):
         self.v_box.add(self.button_round_10)
     
     def button_1v1_clicked(self, event):
+        # Mode 1V1
         gameState.mode = "1v1"
         self.chooseRounds()
     
     def button_vComputer_clicked(self, event):
+        # Mode: against CPU
         gameState.mode = "vComputer"
         self.chooseRounds()
     
     def goToGame(self):
+        # Goes to the game view once the menu has finished, print for debug
         print(f"""
         Mode: {gameState.mode}
         Number of rounds: {gameState.numberOfRounds}
@@ -776,6 +837,7 @@ class MainMenu(arcade.View):
         self.window.show_view(game_view)
 
     def setup(self):
+        # Change BG colour
         print("setup")
         arcade.set_background_color(BACKGROUND_COLOR)
     
@@ -792,11 +854,12 @@ class MainMenu(arcade.View):
             buttons: PLAYER_ORDER: COMPUTER / PERSON IS P1
         """
 
+        # Clear the screen, select the camera surface to draw onto, draw the scene
         self.clear()
         self.gui_camera.use()
         self.manager.draw()
         
-
+        # TITLE: Tic Tac Toe
         textTitle = arcade.Text(theme[THEME]["GUI_TITLE"],
             140,
             SCREEN_HEIGHT - 80,
@@ -804,29 +867,25 @@ class MainMenu(arcade.View):
             theme[THEME]["GUI_TITLE_FONT_SIZE"],
             font_name = theme[THEME]["GUI_TITLE_FONT"])
         
-        
+        # Positioning
         textTitle.x = (SCREEN_WIDTH / 2) - (textTitle.content_width / 2)
         textTitle.y = (SCREEN_HEIGHT / 2)
         textTitle.draw()
                     
-
+# Insantiate the game state class to be shared amongst the classes
 gameState = GameState()
 gameState.setup()
 
 def main():
     """ Main function """
-
+    # Show the main menu when the game is first started
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    
     title_view = MainMenu()
     window.show_view(title_view)
 
-    #game_view = GameView()
-    #window.show_view(game_view)
-    #game = TicTacToe(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    #game.setup()
+    # Run the game
     arcade.run()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # If ran from this file itself and not imported - good practice
     main()
