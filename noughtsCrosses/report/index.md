@@ -18,8 +18,6 @@
 
 - [x] GUI ~~Text Based~~
 
-
-
 # An explanation of how the key concepts of <u>abstraction</u>, <u>algorithms</u> and <u>state</u> apply to this task.
 
 Within this project, the key concepts are evident throughout. From the computer algorithm to the design of the GUI.
@@ -46,8 +44,6 @@ In the final project, even the choosing of grid position has been abstracted fro
 
 By grouping things by common characteristics, within the main game loop they can be referenced easily ie. the main grid contains smaller grid cells which inherits from a simple sprite class. This makes the project more easy to manage. *However, in some cases I recognise within my code additional classes could have been created to reduce the total amount of code but haven't done so to maintain readbility.*
 
-
-
 #### Procedural Abstraction
 
 *Makes an apperance within decomposition*
@@ -73,15 +69,11 @@ def incrementTurn(self): # State of p1 or p2
         self.turn = 0 if self.turn else 1
 ```
 
-
-
 ## State
 
 State is very relevant within this task as everything has state in context ie. the player move is simply represented as `clicked` / `unclicked` or `1`/`0` or `occupied`/`unoccupied` etc... There are two states of a single cell describing whether it has been clicked yet and a futher state describing who it is clicked by. Binary, being the mathematical application of state, could be used in noughts and crosses to represent the grid itself: the entire grid could be occupied with no winner etc... 
 
 The difficulty ratings within the game are either `easy `/`difficult`, the number of rounds aren't a binary state but a trinary state of being selected, whether the mode is `pVp` or `1 vs Computer` is also maintined throughout. As a result of having relied heavily on the state of different items within the game, checking for certain conditions / equality is made more clear and concise.
-
-
 
 ## Algorithms
 
@@ -93,11 +85,7 @@ Overall, each algorithm is self-contained but the higher-level algorithms contai
 
 Example of *abstracted* main menu algorithm:
 
-
-
 ![wer](/Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/MainMenuFlowchart.drawio.png)
-
-
 
 # Additional Features
 
@@ -114,5 +102,3 @@ Example of *abstracted* main menu algorithm:
   - End Screen
   
   - Choose Number of rounds
-
-
