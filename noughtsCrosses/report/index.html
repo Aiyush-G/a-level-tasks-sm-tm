@@ -1301,6 +1301,839 @@ pre[class*="language-"] {
 <p>Overall, each algorithm is self-contained but the higher-level algorithms contains smaller-algorithms that help to carry out specific processes <em>(see top down decomposition).</em></p>
 <p>Example of <em>abstracted</em> main menu algorithm:</p>
 <p><img alt="wer" src="file:///Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/MainMenuFlowchart.drawio.png"></p>
+<h4 class="atx" id="computer-vs-player-algorithm">Computer vs Player Algorithm</h4>
+<p>To tackle this problem I first completed some research and discovered the <code>Minimax</code> algorithm however, I discovered that this meant that the result was always a draw or loss for the oppononent. As a game, I felt that this algorithm was to harsh and resulted in an extreme result. Consequently, I analysed how the minimax algorithm worked and found that it usually targeted two of the corners and then aimed to block the opponents next move.  </p>
+<p>In my adaption of the now non-recursive <del>"minimax"</del> algorithm, the following happened.</p>
+<p>Pseudocode: <em>In reality its slightly more bulky</em></p>
+<pre><code class="fenced-code-block language-py"><span class="token keyword">def</span> <span class="token function">computerTurn</span><span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    cell <span class="token operator">=</span> CHOOSE <span class="token keyword">from</span> AVAILABLE_CORNERS
+    <span class="token keyword">if</span> <span class="token keyword">not</span> AVALIABLE_CORNERS<span class="token punctuation">:</span>
+        cell <span class="token operator">=</span> CHOOSE <span class="token keyword">from</span> random CELL
+    <span class="token keyword">return</span> cell</code></pre>
+<h1 class="atx" id="top-down-decomposition">Top-Down Decomposition</h1>
+<img data-align="center" alt="here" src="file:///Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/ticTacToe-StructureDiagram.drawio%2011.57.18.png" title="">
+
+<h1 class="atx" id="fully-commented-code-solution">Fully Commented Code Solution</h1>
+<p><code>Main.py</code> contains most of the game</p>
+<pre><code class="fenced-code-block language-py"><span class="token keyword">from</span> pprint <span class="token keyword">import</span> pprint   <span class="token comment"># Debugging</span>
+<span class="token keyword">import</span> arcade               <span class="token comment"># Game Library</span>
+<span class="token keyword">import</span> arcade<span class="token punctuation">.</span>gui
+<span class="token keyword">import</span> os                   <span class="token comment"># To quit application</span>
+<span class="token keyword">from</span> utility <span class="token keyword">import</span> <span class="token operator">*</span>       <span class="token comment"># My own library for managing theming</span>
+<span class="token keyword">import</span> random               <span class="token comment"># For the computers turn</span></code></pre>
+<pre><code class="fenced-code-block language-py"><span class="token keyword">class</span> <span class="token class-name">GridCell</span><span class="token punctuation">(</span>arcade<span class="token punctuation">.</span>SpriteSolidColor<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">""" Class that represents a single grid cell by tracking its' state, clicked by, colour etc..."""</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> WIDTH<span class="token punctuation">,</span> HEIGHT<span class="token punctuation">,</span> COLOR<span class="token punctuation">,</span> row<span class="token punctuation">,</span> column<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span>WIDTH<span class="token punctuation">,</span> HEIGHT<span class="token punctuation">,</span> COLOR<span class="token punctuation">)</span>
+
+        <span class="token triple-quoted-string string">""" REFERENCE:
+        print("DEBUG")
+        self.grid_sprites[0][0].color = arcade.color.BLUE
+        print(self.grid_sprites[0][0].color)
+        print("END DEBUG")
+        """</span>
+
+        self<span class="token punctuation">.</span>clickedBy <span class="token operator">=</span> <span class="token boolean">None</span>               <span class="token comment"># Clicked By: P1 / P2 / Computer</span>
+        self<span class="token punctuation">.</span>row <span class="token operator">=</span> row                      <span class="token comment"># Any value =&lt; ROW_COUNT</span>
+        self<span class="token punctuation">.</span>column <span class="token operator">=</span> column                <span class="token comment"># Any value =&lt; COLUMN_COUNT</span>
+        self<span class="token punctuation">.</span>state <span class="token operator">=</span> <span class="token string">"notClicked"</span>           <span class="token comment"># State: notClicked, occupied</span>
+        self<span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">False</span>            <span class="token comment"># Allows the state change to be animated</span>
+        self<span class="token punctuation">.</span>animationFinished <span class="token operator">=</span> <span class="token boolean">False</span>      <span class="token comment"># Helper variable for animations</span>
+
+    <span class="token keyword">def</span> <span class="token function">reset</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" To be called when the grid is redrawn to reset necessary variable values"""</span>
+        self<span class="token punctuation">.</span>color <span class="token operator">=</span> self<span class="token punctuation">.</span>COLOR
+        self<span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">False</span>
+
+    <span class="token keyword">def</span> <span class="token function">isWinningCell</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" Returns value of variable: Utility function, this could be reimplemented as an anonomous function"""</span>
+        <span class="token keyword">if</span> self<span class="token punctuation">.</span>winningCell<span class="token punctuation">:</span>
+            <span class="token keyword">return</span> <span class="token boolean">True</span>
+
+    <span class="token keyword">def</span> <span class="token function">update_animation</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> delta_time<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">if</span> self<span class="token punctuation">.</span>winningCell<span class="token punctuation">:</span>
+            my_target_color <span class="token operator">=</span> WINNING_COLOUR <span class="token comment"># Contains RGB </span>
+            transition_speed <span class="token operator">=</span> <span class="token number">0.1</span>           <span class="token comment"># Max value is 1</span>
+            current_color <span class="token operator">=</span> self<span class="token punctuation">.</span>color
+
+            <span class="token comment"># Interpolation between the two colours</span>
+            <span class="token comment"># Color = R, G, B</span>
+            <span class="token comment"># Interpolation: transition speed * (end colour - start color)</span>
+            colour <span class="token operator">=</span> <span class="token punctuation">(</span>
+                current_color<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">+</span> <span class="token punctuation">(</span>transition_speed <span class="token operator">*</span> <span class="token punctuation">(</span>my_target_color<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">-</span> current_color<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+                current_color<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">+</span> <span class="token punctuation">(</span>transition_speed <span class="token operator">*</span> <span class="token punctuation">(</span>my_target_color<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">-</span> current_color<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+                current_color<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">+</span> <span class="token punctuation">(</span>transition_speed <span class="token operator">*</span> <span class="token punctuation">(</span>my_target_color<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">-</span> current_color<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> 
+
+            self<span class="token punctuation">.</span>color <span class="token operator">=</span> colour
+
+
+
+    <span class="token keyword">def</span> <span class="token function">occupied</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" 
+        Returns state of cell: helper function
+        Print statements here are for debugging
+        """</span>
+        <span class="token keyword">if</span> self<span class="token punctuation">.</span>state <span class="token operator">==</span> <span class="token string">"notClicked"</span><span class="token punctuation">:</span> 
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Not occupied"</span><span class="token punctuation">)</span>
+            <span class="token keyword">return</span> <span class="token boolean">False</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span> 
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Occupied"</span><span class="token punctuation">)</span>
+            <span class="token keyword">return</span> <span class="token boolean">True</span>
+
+    <span class="token keyword">def</span> <span class="token function">clicked</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" 
+        When a cell is clicked, if it is clicked by player 1 then change to their colour, else, player 2 colour.
+        Update who the cell was clicked by
+        Update the state of the cell to occupied
+        """</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Row </span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>row<span class="token punctuation">}</span></span><span class="token string">, Column </span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>column<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+
+        <span class="token keyword">if</span> gameState<span class="token punctuation">.</span>turn <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">:</span> <span class="token comment"># Player 1</span>
+                self<span class="token punctuation">.</span>color <span class="token operator">=</span> P1_COLOUR
+                self<span class="token punctuation">.</span>clickedBy <span class="token operator">=</span> <span class="token number">0</span>
+        <span class="token keyword">elif</span> gameState<span class="token punctuation">.</span>turn <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">:</span> <span class="token comment"># Player 2</span>
+            self<span class="token punctuation">.</span>color <span class="token operator">=</span> P2_COLOUR
+            self<span class="token punctuation">.</span>clickedBy <span class="token operator">=</span> <span class="token number">1</span>
+        self<span class="token punctuation">.</span>state <span class="token operator">=</span> <span class="token string">"occupied"</span>
+</code></pre>
+<pre><code class="fenced-code-block language-py"><span class="token keyword">class</span> <span class="token class-name">GameState</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""
+    Class that holds the "global" variables that should be shared between the entire application
+    Ie. turn, grid etc...
+    """</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        self<span class="token punctuation">.</span>turn <span class="token operator">=</span> <span class="token boolean">None</span>                    <span class="token comment"># 0 (Player 1) / 1 (Player 2)</span>
+        self<span class="token punctuation">.</span>debug <span class="token operator">=</span> <span class="token boolean">True</span>                   <span class="token comment"># Console output variable</span>
+        self<span class="token punctuation">.</span>trackedGridState <span class="token operator">=</span> <span class="token boolean">None</span>        <span class="token comment"># Unfortunately a limitation of the library is that there is no way that sprite </span>
+        self<span class="token punctuation">.</span>trackedGridClickedBy <span class="token operator">=</span> <span class="token boolean">None</span>    <span class="token comment"># groups can be stored in 2D arrays, therefore, a separate array has to be instantiated</span>
+        self<span class="token punctuation">.</span>won <span class="token operator">=</span> <span class="token boolean">False</span>
+        self<span class="token punctuation">.</span>wonBy <span class="token operator">=</span> <span class="token boolean">False</span>
+        self<span class="token punctuation">.</span><span class="token builtin">round</span> <span class="token operator">=</span> <span class="token number">0</span>
+        self<span class="token punctuation">.</span>backingTack <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Sound<span class="token punctuation">(</span><span class="token string">":resources:music/funkyrobot.mp3"</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>backingTack<span class="token punctuation">.</span>play<span class="token punctuation">(</span>loop<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+
+        self<span class="token punctuation">.</span>p0Score <span class="token operator">=</span> <span class="token number">0</span>                    <span class="token comment"># Tracks the player score, </span>
+        self<span class="token punctuation">.</span>p1Score <span class="token operator">=</span> <span class="token number">0</span>                    <span class="token comment"># Player 1 - Either human or CPU</span>
+
+        <span class="token comment"># GUI                               MAIN MENU OPTIONS</span>
+        self<span class="token punctuation">.</span>mode <span class="token operator">=</span> <span class="token string">"1v1"</span>                   <span class="token comment"># vComputer / 1v1</span>
+        self<span class="token punctuation">.</span>numberOfRounds <span class="token operator">=</span> <span class="token string">"5"</span>           <span class="token comment"># 3 / 5 / 10</span>
+        self<span class="token punctuation">.</span>difficulty <span class="token operator">=</span> <span class="token string">"easy"</span>            <span class="token comment"># easy / difficult</span>
+
+    <span class="token keyword">def</span> <span class="token function">reset</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Obselete function but kept in main code as reference, replaced by setup</span>
+        <span class="token comment"># Call when going back to the menu alongisde setup</span>
+        self<span class="token punctuation">.</span>p0Score <span class="token operator">=</span> <span class="token number">0</span> 
+        self<span class="token punctuation">.</span>p1Score <span class="token operator">=</span> <span class="token number">0</span>
+
+
+    <span class="token keyword">def</span> <span class="token function">setup</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
+        When the gameScreen is first shown, reset the variable values. When a completely new game is created, this function
+        is called again to reset those values.
+        """</span>
+        <span class="token comment"># AFTER WINNING</span>
+        self<span class="token punctuation">.</span>won <span class="token operator">=</span> <span class="token boolean">False</span> <span class="token comment"># Sets the true when the game has been won</span>
+        self<span class="token punctuation">.</span>wonBy <span class="token operator">=</span> <span class="token boolean">False</span>
+        self<span class="token punctuation">.</span>turn <span class="token operator">=</span> <span class="token number">0</span>
+
+
+    <span class="token keyword">def</span> <span class="token function">incrementTurn</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Swaps player turns from 1 to 2</span>
+        self<span class="token punctuation">.</span>turn <span class="token operator">=</span> <span class="token number">0</span> <span class="token keyword">if</span> self<span class="token punctuation">.</span>turn <span class="token keyword">else</span> <span class="token number">1</span>
+        <span class="token keyword">if</span> self<span class="token punctuation">.</span>debug<span class="token punctuation">:</span> <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"\n Turn: </span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>turn<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code class="fenced-code-block language-py"><span class="token keyword">class</span> <span class="token class-name">GameView</span><span class="token punctuation">(</span>arcade<span class="token punctuation">.</span>View<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""
+    Main application class
+    """</span>
+
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Set the path to start with this program</span>
+        file_path <span class="token operator">=</span> os<span class="token punctuation">.</span>path<span class="token punctuation">.</span>dirname<span class="token punctuation">(</span>os<span class="token punctuation">.</span>path<span class="token punctuation">.</span>abspath<span class="token punctuation">(</span>__file__<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        os<span class="token punctuation">.</span>chdir<span class="token punctuation">(</span>file_path<span class="token punctuation">)</span>
+
+        <span class="token comment"># Scene Object </span>
+        <span class="token comment"># Tool to manage a number of different SpriteLists by assigning each one a name, </span>
+        <span class="token comment"># and maintaining a draw order.</span>
+
+        self<span class="token punctuation">.</span>scene <span class="token operator">=</span> <span class="token boolean">None</span>
+        self<span class="token punctuation">.</span>grid_sprite_list <span class="token operator">=</span> <span class="token boolean">None</span>
+        self<span class="token punctuation">.</span>grid_sprites <span class="token operator">=</span> <span class="token boolean">None</span>
+
+        <span class="token comment"># Audio</span>
+        self<span class="token punctuation">.</span>winTrack <span class="token operator">=</span> <span class="token boolean">None</span>    <span class="token comment"># To play when a player has won</span>
+        self<span class="token punctuation">.</span>clickTrack <span class="token operator">=</span> <span class="token boolean">None</span>  <span class="token comment"># To play when a cell has been clicked</span>
+
+        <span class="token comment"># State Management</span>
+        gameState<span class="token punctuation">.</span>turn <span class="token operator">=</span> <span class="token boolean">None</span>
+
+    <span class="token keyword">def</span> <span class="token function">setup</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" Game Setup, call function to restart / start (from scratch) the game"""</span>
+
+        <span class="token comment"># Cameras - each view has a different camera, this means that the screen items are drawn in different orders for z-index.</span>
+        self<span class="token punctuation">.</span>camera <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Camera<span class="token punctuation">(</span>self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>width<span class="token punctuation">,</span> self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>height<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>gui_camera <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Camera<span class="token punctuation">(</span>self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>width<span class="token punctuation">,</span> self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>height<span class="token punctuation">)</span>
+
+        <span class="token comment"># Scene init and config</span>
+        self<span class="token punctuation">.</span>scene <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Scene<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Create Sprite Lists</span>
+        self<span class="token punctuation">.</span>scene<span class="token punctuation">.</span>add_sprite_list<span class="token punctuation">(</span>LAYER_NAME_GRID<span class="token punctuation">,</span> self<span class="token punctuation">.</span>grid_sprite_list<span class="token punctuation">)</span>
+
+        <span class="token comment"># Grid sprite list contains an arcade reference to all the cells within the grid so that they can be batch manipulated</span>
+        <span class="token comment"># this was instructed by the docs, however, I believe storing them in a normal 2D array could work better.</span>
+        <span class="token comment"># The grid_sprites was this newer implementation that allowed the sprites to be stored in a 2d array representing their</span>
+        <span class="token comment"># position within the naught and crosses grid. Both were kept for different usage throughout the program, they are both</span>
+        <span class="token comment"># usually reference together.</span>
+        self<span class="token punctuation">.</span>grid_sprite_list <span class="token operator">=</span> arcade<span class="token punctuation">.</span>SpriteList<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>grid_sprites <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+        gameState<span class="token punctuation">.</span>turn <span class="token operator">=</span> <span class="token number">0</span>
+
+        <span class="token comment"># Audio</span>
+        self<span class="token punctuation">.</span>winTrack <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Sound<span class="token punctuation">(</span><span class="token string">":resources:sounds/upgrade2.wav"</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>clickTrack <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Sound<span class="token punctuation">(</span><span class="token string">":resources:sounds/hit4.wav"</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>noWinTrack <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Sound<span class="token punctuation">(</span><span class="token string">":resources:sounds/lose2.wav"</span><span class="token punctuation">)</span>
+
+
+        <span class="token comment"># Grid Creation</span>
+        <span class="token comment"># Stores grid in grid_spire_list and grid_sprites (as representational 2D array)</span>
+        <span class="token comment"># Cells stored as Sprites</span>
+        <span class="token comment"># Dynamic Creation fo a grid depending upon the number of rows / columns</span>
+
+        <span class="token keyword">for</span> row <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>ROW_COUNT<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            <span class="token keyword">for</span> column <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>COLUMN_COUNT<span class="token punctuation">)</span><span class="token punctuation">:</span>
+                x <span class="token operator">=</span> column <span class="token operator">*</span> <span class="token punctuation">(</span>WIDTH <span class="token operator">+</span> MARGIN<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token punctuation">(</span>WIDTH <span class="token operator">/</span> <span class="token number">2</span> <span class="token operator">+</span> MARGIN<span class="token punctuation">)</span>                <span class="token comment"># X and Y coords generated dynamically</span>
+                y <span class="token operator">=</span> row <span class="token operator">*</span> <span class="token punctuation">(</span>HEIGHT <span class="token operator">+</span> MARGIN<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token punctuation">(</span>HEIGHT <span class="token operator">/</span> <span class="token number">2</span> <span class="token operator">+</span> MARGIN<span class="token punctuation">)</span>
+                <span class="token comment"># Create each sprite with a default bg colour</span>
+                sprite <span class="token operator">=</span> GridCell<span class="token punctuation">(</span>WIDTH<span class="token punctuation">,</span> HEIGHT<span class="token punctuation">,</span> STARTING_CELL_COLOUR<span class="token punctuation">,</span> row<span class="token punctuation">,</span> column<span class="token punctuation">)</span>
+                sprite<span class="token punctuation">.</span>center_x <span class="token operator">=</span> x
+                sprite<span class="token punctuation">.</span>center_y <span class="token operator">=</span> y
+                self<span class="token punctuation">.</span>scene<span class="token punctuation">.</span>add_sprite<span class="token punctuation">(</span>LAYER_NAME_GRID<span class="token punctuation">,</span> sprite<span class="token punctuation">)</span>
+                self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span>row<span class="token punctuation">]</span><span class="token punctuation">.</span>append<span class="token punctuation">(</span>sprite<span class="token punctuation">)</span>
+
+        <span class="token comment"># Positioning</span>
+        self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">.</span>move<span class="token punctuation">(</span>
+            <span class="token punctuation">(</span>SCREEN_WIDTH <span class="token operator">//</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token punctuation">(</span>COLUMN_COUNT<span class="token operator">*</span><span class="token punctuation">(</span>WIDTH<span class="token operator">+</span>MARGIN<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">//</span> <span class="token number">2</span><span class="token punctuation">,</span> 
+            <span class="token punctuation">(</span>SCREEN_HEIGHT <span class="token operator">//</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token punctuation">(</span>ROW_COUNT<span class="token operator">*</span><span class="token punctuation">(</span>HEIGHT<span class="token operator">+</span>MARGIN<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">//</span> <span class="token number">2</span>
+        <span class="token punctuation">)</span>
+
+
+
+        <span class="token comment"># -- Other Stuff</span>
+        <span class="token comment"># Set bg colour</span>
+        arcade<span class="token punctuation">.</span>set_background_color<span class="token punctuation">(</span>BACKGROUND_COLOR<span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">on_show_view</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Function ran when the view changed to 'Game View' """</span>
+        self<span class="token punctuation">.</span>setup<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">on_draw</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" Render the screen GUI"""</span>
+        <span class="token comment"># Clear the screen to the background colour</span>
+        self<span class="token punctuation">.</span>clear<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Switch to GUI camera before drawing GUI items</span>
+        <span class="token comment"># 1. Score / Menu / Timer etc...</span>
+        self<span class="token punctuation">.</span>gui_camera<span class="token punctuation">.</span>use<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token triple-quoted-string string">"""
+        GUI ELEMENTS:
+        BG / TITLE / ROUND etc..
+        """</span>
+
+        <span class="token comment"># Background to the grid cells</span>
+        arcade<span class="token punctuation">.</span>draw_rectangle_filled<span class="token punctuation">(</span>
+            center_x <span class="token operator">=</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">.</span>center<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> 
+            center_y <span class="token operator">=</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">.</span>center<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> 
+            width <span class="token operator">=</span> ROW_COUNT<span class="token operator">*</span><span class="token punctuation">(</span>WIDTH<span class="token operator">+</span><span class="token number">1.5</span><span class="token operator">*</span>MARGIN<span class="token punctuation">)</span><span class="token punctuation">,</span> 
+            height<span class="token operator">=</span> COLUMN_COUNT<span class="token operator">*</span><span class="token punctuation">(</span>HEIGHT<span class="token operator">+</span><span class="token number">1.5</span><span class="token operator">*</span>MARGIN<span class="token punctuation">)</span><span class="token punctuation">,</span> 
+            color <span class="token operator">=</span> FRAME_COLOR <span class="token comment"># (182, 213, 227) OLD</span>
+        <span class="token punctuation">)</span>
+
+        <span class="token comment"># Text items, the theme that they are referencing is pulled from utils.py, a basic API has been constructed</span>
+        <span class="token comment"># to provide theming which could be implemented in a later version of naughts and crosses.</span>
+        textTitle <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Text<span class="token punctuation">(</span>theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_TITLE"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         <span class="token number">140</span><span class="token punctuation">,</span>
+                         SCREEN_HEIGHT <span class="token operator">-</span> <span class="token number">80</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"TITLE_COLOUR"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_TITLE_FONT_SIZE"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         font_name <span class="token operator">=</span> theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_TITLE_FONT"</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Player X: Turn</span>
+        textPlayer <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Text<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Player: </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span>turn <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">,</span>
+                         <span class="token number">300</span><span class="token punctuation">,</span>
+                         <span class="token number">70</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"SUBTITLE_COLOUR"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_SUBTITLE_FONT_SIZE"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         font_name <span class="token operator">=</span> theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_SUBTITLE_FONT"</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Rounds: 0 --&gt; gameState.numberOfRounds</span>
+        textRound <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Text<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Round </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span><span class="token builtin">round</span><span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">,</span>
+                         <span class="token number">320</span><span class="token punctuation">,</span>
+                         <span class="token number">30</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"SUBTITLE_COLOUR"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_SUBTITLE_FONT_SIZE"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         font_name<span class="token operator">=</span>theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_SUBTITLE_FONT"</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Player X Score</span>
+        p0Score <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Text<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"P1 Score: </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span>p0Score<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">,</span>
+                         <span class="token number">25</span><span class="token punctuation">,</span>
+                         <span class="token number">70</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"SUBTITLE_COLOUR"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_SUBTITLE_FONT_SIZE"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         font_name<span class="token operator">=</span>theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_SUBTITLE_FONT"</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Depending on whether the CPU player is enabled the text varies: "CPU" / "P2" + Score: SCORE</span>
+        <span class="token keyword">if</span> gameState<span class="token punctuation">.</span>mode <span class="token operator">==</span> <span class="token string">"vComputer"</span><span class="token punctuation">:</span> player <span class="token operator">=</span> <span class="token string">"CPU"</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span> player <span class="token operator">=</span> <span class="token string">"P2"</span>
+        p1Score <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Text<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">{</span>player<span class="token punctuation">}</span></span><span class="token string"> Score: </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span>p1Score<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">,</span>
+                         <span class="token number">25</span><span class="token punctuation">,</span>
+                         <span class="token number">30</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"SUBTITLE_COLOUR"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_SUBTITLE_FONT_SIZE"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                         font_name<span class="token operator">=</span>theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_SUBTITLE_FONT"</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Place text in the center of the screen: x start = (screen width / 2) - (content width / 2)</span>
+        <span class="token comment"># Positioning</span>
+        textRound<span class="token punctuation">.</span>x <span class="token operator">=</span> <span class="token punctuation">(</span>SCREEN_WIDTH <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token punctuation">(</span>textRound<span class="token punctuation">.</span>content_width <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span>
+        textPlayer<span class="token punctuation">.</span>x <span class="token operator">=</span> <span class="token punctuation">(</span>SCREEN_WIDTH <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token punctuation">(</span>textPlayer<span class="token punctuation">.</span>content_width <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span>
+        textTitle<span class="token punctuation">.</span>x <span class="token operator">=</span> <span class="token punctuation">(</span>SCREEN_WIDTH <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token punctuation">(</span>textTitle<span class="token punctuation">.</span>content_width <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Draw all items</span>
+        textRound<span class="token punctuation">.</span>draw<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        textPlayer<span class="token punctuation">.</span>draw<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        textTitle<span class="token punctuation">.</span>draw<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        p0Score<span class="token punctuation">.</span>draw<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        p1Score<span class="token punctuation">.</span>draw<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Activate Camera (to be used for screen effects)</span>
+        self<span class="token punctuation">.</span>camera<span class="token punctuation">.</span>use<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Draw Scene</span>
+        self<span class="token punctuation">.</span>scene<span class="token punctuation">.</span>draw<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token comment"># self.grid_sprite_list.draw()</span>
+
+    <span class="token keyword">def</span> <span class="token function">on_update</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> delta_time<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" Movement / Game Logic"""</span>
+
+        <span class="token comment"># FLAG is used since if all the cells are occupied with no winner then the round needs to be incremented with no </span>
+        <span class="token comment"># change in score. </span>
+        <span class="token comment"># BUG -&gt; FEATURE: if the winner makes their winning move in the last possible cell on the grid then they get double</span>
+        <span class="token comment"># points. At first this was a bug, however, it adds more skill to winning the game if you are behind on points. </span>
+        allOccupied <span class="token operator">=</span> <span class="token boolean">True</span>
+        <span class="token keyword">for</span> sprite <span class="token keyword">in</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">:</span>
+            sprite<span class="token punctuation">.</span>isWinningCell<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+            <span class="token comment"># If the grid is filled but there is no wining state then move onto the next round</span>
+            <span class="token keyword">if</span> sprite<span class="token punctuation">.</span>state <span class="token operator">==</span> <span class="token string">"notClicked"</span><span class="token punctuation">:</span>
+                allOccupied <span class="token operator">=</span> <span class="token boolean">False</span> 
+
+        <span class="token comment"># Move onto next round if grid is full with some cleanup</span>
+        <span class="token keyword">if</span> allOccupied<span class="token punctuation">:</span>
+            self<span class="token punctuation">.</span>trackGrid<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token comment">#self.calculateWin()</span>
+            arcade<span class="token punctuation">.</span>pause<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>noWinTrack<span class="token punctuation">.</span>play<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>nextRound<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Computers turn after the player has "played"</span>
+        <span class="token keyword">if</span> gameState<span class="token punctuation">.</span>mode <span class="token operator">==</span> <span class="token string">"vComputer"</span><span class="token punctuation">:</span>
+            <span class="token keyword">if</span> gameState<span class="token punctuation">.</span>turn <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">:</span>
+                self<span class="token punctuation">.</span>computerTurn<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Update Animations</span>
+        self<span class="token punctuation">.</span>scene<span class="token punctuation">.</span>update_animation<span class="token punctuation">(</span>
+            delta_time<span class="token punctuation">,</span> 
+            <span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span>
+        <span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">on_mouse_press</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">,</span> y<span class="token punctuation">,</span> button<span class="token punctuation">,</span> key_modifiers<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
+        Called when the user presses a mouse button.
+        """</span>
+
+        <span class="token comment"># If the game has been won by someone then go to the next round</span>
+        <span class="token keyword">if</span> <span class="token keyword">not</span> gameState<span class="token punctuation">.</span>won<span class="token punctuation">:</span>
+
+            <span class="token comment"># Get a list, of the cells pressed at one time (hopefully just contains one cell)</span>
+            <span class="token comment"># If that cell has not been clicked before, then simulate a click on that cell </span>
+            <span class="token comment"># and move to the next turn, change its' colour and play a sound.</span>
+            clicked <span class="token operator">=</span> arcade<span class="token punctuation">.</span>get_sprites_at_point<span class="token punctuation">(</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span><span class="token punctuation">,</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">)</span>
+            <span class="token keyword">if</span> clicked<span class="token punctuation">:</span>
+                <span class="token keyword">for</span> cell <span class="token keyword">in</span> clicked<span class="token punctuation">:</span>     
+                    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"cell state </span><span class="token interpolation"><span class="token punctuation">{</span>cell<span class="token punctuation">.</span>state<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+                    <span class="token keyword">if</span> cell<span class="token punctuation">.</span>state <span class="token operator">==</span> <span class="token string">"notClicked"</span><span class="token punctuation">:</span>
+                        self<span class="token punctuation">.</span>clickTrack<span class="token punctuation">.</span>play<span class="token punctuation">(</span><span class="token punctuation">)</span>
+                        cell<span class="token punctuation">.</span>clicked<span class="token punctuation">(</span><span class="token punctuation">)</span>
+                        gameState<span class="token punctuation">.</span>incrementTurn<span class="token punctuation">(</span><span class="token punctuation">)</span>
+                    <span class="token keyword">else</span><span class="token punctuation">:</span>
+                        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Cell Occupied"</span><span class="token punctuation">)</span>
+
+            <span class="token comment"># Updates both references of the grid: 2D &amp; 1D</span>
+            self<span class="token punctuation">.</span>trackGrid<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>calculateWin<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            <span class="token comment"># If the game has been won then move to next round</span>
+            self<span class="token punctuation">.</span>nextRound<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">computerTurn</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" Simulated playing via the computer """</span>
+        <span class="token comment"># Requirements:</span>
+        <span class="token comment"># EASY:</span>
+        <span class="token comment"># Click a random cell</span>
+        <span class="token comment"># Click a cell that isn't already clicked</span>
+
+        <span class="token comment"># DIFFICULT: </span>
+        <span class="token comment"># One way to tackle the difficult mode could be to use a minimax function</span>
+        <span class="token comment"># However, that results in an always draw or win for the CPU, therefore, </span>
+        <span class="token comment"># by implementing common tic-tac-toe strategy with some randomness could make </span>
+        <span class="token comment"># this more fair.</span>
+        <span class="token comment"># IE. take corners first then random</span>
+
+        <span class="token comment"># If game isn't won and game mode is easy then just select and click a random cell, loop if the cell is occupied already.</span>
+        <span class="token keyword">if</span> <span class="token keyword">not</span> gameState<span class="token punctuation">.</span>won<span class="token punctuation">:</span>
+            chosenCell <span class="token operator">=</span> <span class="token boolean">False</span>
+            <span class="token keyword">if</span> gameState<span class="token punctuation">.</span>difficulty <span class="token operator">==</span> <span class="token string">"easy"</span><span class="token punctuation">:</span> <span class="token comment"># Any random cell</span>
+                <span class="token keyword">while</span> <span class="token keyword">not</span> chosenCell<span class="token punctuation">:</span>
+                    <span class="token comment"># print(self.grid_sprites[0][0].state)</span>
+                    randCell <span class="token operator">=</span> random<span class="token punctuation">.</span>choice<span class="token punctuation">(</span>self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">)</span>
+                    <span class="token keyword">if</span> randCell<span class="token punctuation">.</span>state <span class="token operator">==</span> <span class="token string">"notClicked"</span><span class="token punctuation">:</span>
+                        chosenCell <span class="token operator">=</span> <span class="token boolean">True</span>
+
+            <span class="token keyword">elif</span> gameState<span class="token punctuation">.</span>difficulty <span class="token operator">==</span> <span class="token string">"difficult"</span><span class="token punctuation">:</span> <span class="token comment"># Corner cells first</span>
+                <span class="token comment"># Indexes order for self.scene[LAYER_NAME_GRID].state are as follows:</span>
+                <span class="token comment"># 0 1 2</span>
+                <span class="token comment"># 3 4 5 </span>
+                <span class="token comment"># 6 7 8 </span>
+
+                <span class="token comment"># If two corners are now occupied by CPU:</span>
+                <span class="token comment"># 0, 2 -&gt; Select 1</span>
+                <span class="token comment"># 0, 6 -&gt; Select 3</span>
+                <span class="token comment"># 2, 8 -&gt; Select 5</span>
+                <span class="token comment"># 6, 2 -&gt; Select 4</span>
+                <span class="token comment"># 8,0  -&gt; Select 4</span>
+
+
+                cornerCellIndexes <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">]</span>
+                currIndex <span class="token operator">=</span> <span class="token number">0</span>
+                cornerCellsOccupiedBy <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token comment"># cellIndex, whoBy</span>
+                occupyCornerCell<span class="token punctuation">,</span> goForWin <span class="token operator">=</span> <span class="token boolean">True</span><span class="token punctuation">,</span> <span class="token boolean">False</span>
+                twoCornerCellsOccupied<span class="token punctuation">,</span> twoCells <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+
+                <span class="token comment"># Get a list of all the corner cells</span>
+                <span class="token keyword">for</span> turn <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token builtin">len</span><span class="token punctuation">(</span>cornerCellIndexes<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+                    <span class="token comment"># Not the CPU is clicked by: 1 not 0 </span>
+                    cornerCellsOccupiedBy<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token punctuation">[</span>cornerCellIndexes<span class="token punctuation">[</span>turn<span class="token punctuation">]</span><span class="token punctuation">,</span>self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">[</span>turn<span class="token punctuation">]</span><span class="token punctuation">.</span>clickedBy<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token comment"># cellIndex, whoBy</span>
+                <span class="token comment"># Check if two corners are occupied by the CPU, if so then it simulates a click of any other unocuppied cell.</span>
+                <span class="token keyword">for</span> gridC <span class="token keyword">in</span> cornerCellsOccupiedBy<span class="token punctuation">:</span>
+                    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"GRIDC: </span><span class="token interpolation"><span class="token punctuation">{</span>gridC<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+                    <span class="token keyword">if</span> <span class="token builtin">str</span><span class="token punctuation">(</span>gridC<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token string">"1"</span><span class="token punctuation">:</span>            <span class="token comment"># Player 1</span>
+                        twoCornerCellsOccupied<span class="token operator">+=</span> <span class="token number">1</span>
+                        twoCells<span class="token punctuation">.</span>append<span class="token punctuation">(</span>gridC<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>       <span class="token comment"># Index of the grid</span>
+                <span class="token keyword">if</span> twoCornerCellsOccupied <span class="token operator">==</span> <span class="token number">2</span><span class="token punctuation">:</span> 
+                    goForWin <span class="token operator">=</span> <span class="token boolean">True</span>
+                    occupyCornerCell <span class="token operator">=</span> <span class="token boolean">False</span>
+
+                <span class="token comment"># If two corner cells occupied by the CPU then go for the winning combination</span>
+                <span class="token keyword">if</span> goForWin<span class="token punctuation">:</span>
+                    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">F"TWO CELLS: </span><span class="token interpolation"><span class="token punctuation">{</span>twoCells<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+                    <span class="token keyword">if</span> twoCells <span class="token operator">==</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">:</span> randCell <span class="token operator">=</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span>
+                    <span class="token keyword">elif</span> twoCells <span class="token operator">==</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">]</span><span class="token punctuation">:</span> randCell <span class="token operator">=</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span>
+                    <span class="token keyword">elif</span> twoCells <span class="token operator">==</span> <span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token punctuation">:</span> randCell <span class="token operator">=</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">]</span>
+                    <span class="token keyword">elif</span> twoCells <span class="token operator">==</span> <span class="token punctuation">[</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">:</span> randCell <span class="token operator">=</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span>
+                    <span class="token keyword">elif</span> twoCells <span class="token operator">==</span> <span class="token punctuation">[</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">:</span> randCell <span class="token operator">=</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span>
+                    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"INDEX TO BE CLICKED =&gt; TWO CORENER CELLS SELECTED: </span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">.</span>index<span class="token punctuation">(</span>randCell<span class="token punctuation">)</span><span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+
+                    <span class="token comment"># If the winning cell is occupied then select another random cell</span>
+                    <span class="token keyword">if</span> <span class="token keyword">not</span> randCell<span class="token punctuation">.</span>state <span class="token operator">==</span> <span class="token string">"notClicked"</span><span class="token punctuation">:</span> <span class="token comment"># AKA ITS OCCUPIED</span>
+                        occupyCornerCell <span class="token operator">=</span> <span class="token boolean">True</span>
+
+                <span class="token comment"># If cell is occupied then occupyCornerCell = True =&gt; it will select any random cell</span>
+                <span class="token comment"># Attempt to occupy any corner cell.</span>
+                <span class="token keyword">if</span> occupyCornerCell<span class="token punctuation">:</span>
+                    <span class="token keyword">while</span> <span class="token keyword">not</span> chosenCell<span class="token punctuation">:</span>
+                        randCell <span class="token operator">=</span> self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">[</span>cornerCellIndexes<span class="token punctuation">[</span>currIndex<span class="token punctuation">]</span><span class="token punctuation">]</span>
+                        <span class="token keyword">if</span> randCell<span class="token punctuation">.</span>state <span class="token operator">==</span> <span class="token string">"notClicked"</span><span class="token punctuation">:</span>
+                            chosenCell <span class="token operator">=</span> <span class="token boolean">True</span>
+                        <span class="token keyword">else</span><span class="token punctuation">:</span>
+                            <span class="token keyword">if</span> <span class="token punctuation">(</span>currIndex <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">&gt;</span> <span class="token number">3</span><span class="token punctuation">:</span>
+                                randCell <span class="token operator">=</span> random<span class="token punctuation">.</span>choice<span class="token punctuation">(</span>self<span class="token punctuation">.</span>scene<span class="token punctuation">[</span>LAYER_NAME_GRID<span class="token punctuation">]</span><span class="token punctuation">)</span>
+                                <span class="token keyword">if</span> randCell<span class="token punctuation">.</span>state <span class="token operator">==</span> <span class="token string">"notClicked"</span><span class="token punctuation">:</span>
+                                    chosenCell <span class="token operator">=</span> <span class="token boolean">True</span>
+                            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                                currIndex <span class="token operator">+=</span> <span class="token number">1</span>
+                                <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"CurrIndex </span><span class="token interpolation"><span class="token punctuation">{</span>currIndex<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+
+            <span class="token comment"># Click cell, increment turn, track 2D &amp; 1D grid</span>
+            randCell<span class="token punctuation">.</span>clicked<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            gameState<span class="token punctuation">.</span>incrementTurn<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+            self<span class="token punctuation">.</span>trackGrid<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>calculateWin<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+
+    <span class="token keyword">def</span> <span class="token function">trackGrid</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Tracks the grid state ie. clicked / unclicked</span>
+        trackedGridState <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+        <span class="token keyword">for</span> row <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>ROW_COUNT<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            trackedGridState<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            <span class="token keyword">for</span> column <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>COLUMN_COUNT<span class="token punctuation">)</span><span class="token punctuation">:</span>
+                trackedGridState<span class="token punctuation">[</span>row<span class="token punctuation">]</span><span class="token punctuation">.</span>append<span class="token punctuation">(</span>self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span>row<span class="token punctuation">]</span><span class="token punctuation">[</span>column<span class="token punctuation">]</span><span class="token punctuation">.</span>state<span class="token punctuation">)</span>
+
+
+        <span class="token comment"># Tracks who the grid is clicked by</span>
+        trackedGridClickedBy <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+        <span class="token keyword">for</span> row <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>ROW_COUNT<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            trackedGridClickedBy<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            <span class="token keyword">for</span> column <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>COLUMN_COUNT<span class="token punctuation">)</span><span class="token punctuation">:</span>
+                trackedGridClickedBy<span class="token punctuation">[</span>row<span class="token punctuation">]</span><span class="token punctuation">.</span>append<span class="token punctuation">(</span>self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span>row<span class="token punctuation">]</span><span class="token punctuation">[</span>column<span class="token punctuation">]</span><span class="token punctuation">.</span>clickedBy<span class="token punctuation">)</span>
+
+        <span class="token comment"># Update in global state</span>
+        gameState<span class="token punctuation">.</span>trackedGridState <span class="token operator">=</span> trackedGridState
+        gameState<span class="token punctuation">.</span>trackedGridClickedBy <span class="token operator">=</span> trackedGridClickedBy
+
+    <span class="token keyword">def</span> <span class="token function">calculateWin</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
+        Method to analyse the current grid configuration to find whether any combinations are winning: 3 (or X) in a row.
+        Ie: Where X wins
+        COLUMN  COLUMN  COLUMN  ROW     ROW     ROW       DIAGONAL
+        X 0 0   0 X 0   0 0 X   X X X   O O O   0 0 0   X 0 0   0 0 X
+        X 0 0   0 X 0   0 0 X   O O O   X X X   0 0 0   0 X 0   0 X 0 
+        X 0 0   0 X 0   0 0 X   O O O   O O O   X X X   0 0 X   X 0 0 
+                                DONE    DONE    DONE
+
+        """</span>
+        <span class="token comment">####</span>
+        <span class="token comment">#### IMPLEMENTED WINNING SQUARE ATTRIBUTE TO EACH GRID CELL</span>
+        <span class="token comment">####</span>
+        <span class="token comment">####</span>
+
+        <span class="token comment">## IMPLEMENTED ROW CHECKING</span>
+        gcb <span class="token operator">=</span> gameState<span class="token punctuation">.</span>trackedGridClickedBy
+
+        <span class="token comment"># Checks each row to see if it is occupied by the same player</span>
+        <span class="token comment"># Calls hasWon when a winning row has been found</span>
+        <span class="token keyword">for</span> row <span class="token keyword">in</span> gcb<span class="token punctuation">:</span>
+            <span class="token keyword">if</span> <span class="token builtin">all</span><span class="token punctuation">(</span>x<span class="token operator">==</span>row<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> row<span class="token punctuation">)</span> <span class="token keyword">and</span> row<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">!=</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+                self<span class="token punctuation">.</span>hasWon<span class="token punctuation">(</span>_type <span class="token operator">=</span> <span class="token string">"row"</span><span class="token punctuation">,</span> pos <span class="token operator">=</span> gcb<span class="token punctuation">.</span>index<span class="token punctuation">(</span>row<span class="token punctuation">)</span><span class="token punctuation">,</span> winner <span class="token operator">=</span> row<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+                <span class="token comment"># Updates the winning cell property so the cells can be highlighted later</span>
+                <span class="token keyword">for</span> index <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> ROW_COUNT<span class="token punctuation">)</span><span class="token punctuation">:</span>
+                    self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span>gcb<span class="token punctuation">.</span>index<span class="token punctuation">(</span>row<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">True</span>
+
+
+        <span class="token comment">### IMPLEMENTED COLUMN CHECKING, itterates through each column to check if it is occupied by the same player</span>
+        <span class="token comment"># Calls hasWon function when a winning column found</span>
+        <span class="token keyword">for</span> i <span class="token keyword">in</span> gcb<span class="token punctuation">:</span>
+            vals<span class="token punctuation">,</span> currColumn <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span> gcb<span class="token punctuation">.</span>index<span class="token punctuation">(</span>i<span class="token punctuation">)</span>
+            <span class="token keyword">for</span> j <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token builtin">len</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+                curr <span class="token operator">=</span> gcb<span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">[</span>gcb<span class="token punctuation">.</span>index<span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                vals<span class="token punctuation">.</span>append<span class="token punctuation">(</span>curr<span class="token punctuation">)</span>
+            <span class="token keyword">if</span> <span class="token builtin">all</span><span class="token punctuation">(</span>x<span class="token operator">==</span>vals<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> vals<span class="token punctuation">)</span> <span class="token keyword">and</span> vals<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">!=</span> <span class="token boolean">None</span><span class="token punctuation">:</span> 
+                <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Column </span><span class="token interpolation"><span class="token punctuation">{</span>currColumn<span class="token punctuation">}</span></span><span class="token string"> has 3 in a row"</span></span><span class="token punctuation">)</span>
+                self<span class="token punctuation">.</span>hasWon<span class="token punctuation">(</span>_type <span class="token operator">=</span> <span class="token string">"column"</span><span class="token punctuation">,</span> pos <span class="token operator">=</span> currColumn<span class="token punctuation">,</span> winner <span class="token operator">=</span> vals<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>   
+
+                <span class="token comment"># Updates the winning cell property so the cells can be highlighted later</span>
+                <span class="token keyword">for</span> index <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> COLUMN_COUNT<span class="token punctuation">)</span><span class="token punctuation">:</span>
+                    self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">[</span>currColumn<span class="token punctuation">]</span><span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">True</span>
+
+            vals<span class="token punctuation">.</span>clear<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment"># Clear the temporary list containing column cell values</span>
+
+        <span class="token comment"># IMPLEMENTED DIAGONAL CHECKING - NOT DYNAMIC RIGHT NOW AND ONLY WORKS WITH 3X3</span>
+        <span class="token comment"># DIAGONAL L2R</span>
+        <span class="token keyword">if</span> gcb<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">!=</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+            <span class="token keyword">if</span> gcb<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">==</span> gcb<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token keyword">and</span> gcb<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">==</span> gcb<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">:</span> <span class="token comment"># Combination of diagonal cells</span>
+
+                self<span class="token punctuation">.</span>hasWon<span class="token punctuation">(</span>_type <span class="token operator">=</span> <span class="token string">"DIAGONAL"</span><span class="token punctuation">,</span> pos <span class="token operator">=</span> <span class="token string">"3 X 3 LTR"</span><span class="token punctuation">,</span> winner <span class="token operator">=</span> gcb<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+                <span class="token comment"># Updates the winning cell property so the cells can be highlighted later</span>
+                self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">True</span>
+                self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">True</span>
+                self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">True</span>
+
+        <span class="token comment"># RTL diagonal checking, hardcoded combinations, however, this could be done dynamically at a later stage.</span>
+        <span class="token keyword">if</span> gcb<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">!=</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+            <span class="token keyword">if</span> gcb<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">==</span> gcb<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token keyword">and</span> gcb<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">==</span> gcb<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+
+                self<span class="token punctuation">.</span>hasWon<span class="token punctuation">(</span>_type <span class="token operator">=</span> <span class="token string">"DIAGONAL"</span><span class="token punctuation">,</span> pos <span class="token operator">=</span> <span class="token string">"3 X 3 RTL"</span><span class="token punctuation">,</span> winner <span class="token operator">=</span> gcb<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+                self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">True</span>
+                self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">True</span>
+                self<span class="token punctuation">.</span>grid_sprites<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>winningCell <span class="token operator">=</span> <span class="token boolean">True</span>
+
+
+    <span class="token keyword">def</span> <span class="token function">hasWon</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> _type<span class="token punctuation">,</span> pos<span class="token punctuation">,</span> winner<span class="token punctuation">)</span><span class="token punctuation">:</span> <span class="token comment"># Column, Row, Diagonal / row 1,2,3, etc... / 0,1</span>
+        <span class="token triple-quoted-string string">""" When the player has won, reflect this change in the game state alongside the winner, increase their score by 1"""</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"3 in a row on </span><span class="token interpolation"><span class="token punctuation">{</span>_type<span class="token punctuation">}</span></span><span class="token string"> </span><span class="token interpolation"><span class="token punctuation">{</span>pos<span class="token punctuation">}</span></span><span class="token string"> by player </span><span class="token interpolation"><span class="token punctuation">{</span>winner<span class="token punctuation">}</span></span><span class="token string"> aka (</span><span class="token interpolation"><span class="token punctuation">{</span>winner<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">}</span></span><span class="token string">)"</span></span><span class="token punctuation">)</span>
+        gameState<span class="token punctuation">.</span>won <span class="token operator">=</span> <span class="token boolean">True</span>
+        gameState<span class="token punctuation">.</span>wonBy <span class="token operator">=</span> winner
+        <span class="token keyword">if</span> <span class="token builtin">int</span><span class="token punctuation">(</span>winner<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">:</span>
+            gameState<span class="token punctuation">.</span>p0Score<span class="token operator">+=</span> <span class="token number">1</span>
+        <span class="token keyword">elif</span> <span class="token builtin">int</span><span class="token punctuation">(</span>winner<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">:</span>
+            gameState<span class="token punctuation">.</span>p1Score <span class="token operator">+=</span> <span class="token number">1</span>
+
+        <span class="token comment"># Winning sound</span>
+        self<span class="token punctuation">.</span>winTrack<span class="token punctuation">.</span>play<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">nextRound</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">""" 
+        Increments the game round by 1, if the next game round is greater than the number selected by the player in 
+        the starting menu then change the game view to the GameEnd() View
+        """</span>
+        gameState<span class="token punctuation">.</span><span class="token builtin">round</span> <span class="token operator">+=</span> <span class="token number">1</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Round: </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span><span class="token builtin">round</span><span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Total number of rounds: </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span>numberOfRounds<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+
+        <span class="token keyword">if</span> <span class="token builtin">int</span><span class="token punctuation">(</span>gameState<span class="token punctuation">.</span>numberOfRounds<span class="token punctuation">)</span> <span class="token operator">&lt;</span> gameState<span class="token punctuation">.</span><span class="token builtin">round</span><span class="token punctuation">:</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span>numberOfRounds<span class="token punctuation">}</span></span><span class="token string"> &lt; </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span><span class="token builtin">round</span><span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+            end_view <span class="token operator">=</span> GameEnd<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>show_view<span class="token punctuation">(</span>end_view<span class="token punctuation">)</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span> <span class="token comment"># If increment to next game then reset the game view and show it to the user</span>
+            gameState<span class="token punctuation">.</span>setup<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            game_view <span class="token operator">=</span> GameView<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>show_view<span class="token punctuation">(</span>game_view<span class="token punctuation">)</span>
+</code></pre>
+<pre><code class="fenced-code-block language-py"><span class="token keyword">class</span> <span class="token class-name">MainMenu</span><span class="token punctuation">(</span>arcade<span class="token punctuation">.</span>View<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">""" Class that manages the 'menu' view """</span>
+    <span class="token comment">#arcade.set_background_color(BACKGROUND_COLOR)</span>
+
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Camera for which the GUI will be drawn onto</span>
+        self<span class="token punctuation">.</span>gui_camera <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Camera<span class="token punctuation">(</span>self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>width<span class="token punctuation">,</span> self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>height<span class="token punctuation">)</span>
+
+        <span class="token comment"># Create and enable the UIManager</span>
+        self<span class="token punctuation">.</span>manager <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIManager<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>manager<span class="token punctuation">.</span>enable<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Create a box group to align the 'AI / 1V1' button in the center</span>
+        self<span class="token punctuation">.</span>v_box <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIBoxLayout<span class="token punctuation">(</span>
+            space_between<span class="token operator">=</span> <span class="token number">10</span><span class="token punctuation">,</span>
+        <span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>v_box_rounds_text <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIBoxLayout<span class="token punctuation">(</span>
+            space_between<span class="token operator">=</span><span class="token number">10</span><span class="token punctuation">,</span>
+        <span class="token punctuation">)</span>
+
+
+        <span class="token comment"># Style for button</span>
+        buttonStyle <span class="token operator">=</span> <span class="token punctuation">{</span>
+            <span class="token string">"bg_color"</span><span class="token punctuation">:</span> WINNING_COLOUR<span class="token punctuation">,</span>
+            <span class="token string">"bg_color_pressed"</span><span class="token punctuation">:</span> TITLE_COLOUR<span class="token punctuation">,</span>
+            <span class="token string">"font_color_pressed"</span><span class="token punctuation">:</span> BACKGROUND_COLOR<span class="token punctuation">,</span>
+            <span class="token string">"border_color_pressed"</span><span class="token punctuation">:</span> BACKGROUND_COLOR<span class="token punctuation">,</span>
+            <span class="token string">"font_name"</span><span class="token punctuation">:</span> <span class="token string">"Kenney Pixel Square"</span><span class="token punctuation">,</span>
+            <span class="token string">"font_size"</span><span class="token punctuation">:</span> <span class="token number">20</span><span class="token punctuation">,</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment"># Create a button. We'll click on this to open our window.</span>
+        <span class="token comment"># Add it v_box for positioning.</span>
+
+        <span class="token comment">### Choose Opponent</span>
+        self<span class="token punctuation">.</span>button_1v1 <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIFlatButton<span class="token punctuation">(</span>
+            text<span class="token operator">=</span><span class="token string">"1 vs 1"</span><span class="token punctuation">,</span> width<span class="token operator">=</span><span class="token number">300</span><span class="token punctuation">,</span> style<span class="token operator">=</span>buttonStyle
+        <span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>button_vComputer <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIFlatButton<span class="token punctuation">(</span>
+            text<span class="token operator">=</span><span class="token string">"1 vs Computer"</span><span class="token punctuation">,</span> width<span class="token operator">=</span><span class="token number">300</span><span class="token punctuation">,</span> style <span class="token operator">=</span> buttonStyle
+        <span class="token punctuation">)</span>
+
+        <span class="token comment">### Choose Number of Rounds</span>
+        self<span class="token punctuation">.</span>ui_text_label <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UITextArea<span class="token punctuation">(</span>
+            text<span class="token operator">=</span><span class="token string">"Rounds:"</span><span class="token punctuation">,</span>
+            width<span class="token operator">=</span><span class="token number">300</span><span class="token punctuation">,</span>
+            height<span class="token operator">=</span><span class="token number">40</span><span class="token punctuation">,</span>
+            font_size<span class="token operator">=</span><span class="token number">20</span><span class="token punctuation">,</span>
+            font_name<span class="token operator">=</span><span class="token string">"Kenney Pixel Square"</span><span class="token punctuation">,</span>
+            text_color<span class="token operator">=</span>TITLE_COLOUR
+            <span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>v_box_rounds_text<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>ui_text_label<span class="token punctuation">)</span>
+        <span class="token comment"># Position the rounds</span>
+        self<span class="token punctuation">.</span>managerRounds <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIAnchorWidget<span class="token punctuation">(</span>
+                anchor_x<span class="token operator">=</span><span class="token string">"center_x"</span><span class="token punctuation">,</span>
+                anchor_y<span class="token operator">=</span><span class="token string">"center_y"</span><span class="token punctuation">,</span>
+                align_y<span class="token operator">=</span><span class="token operator">-</span><span class="token number">50</span><span class="token punctuation">,</span>
+                align_x<span class="token operator">=</span><span class="token operator">-</span><span class="token number">10</span><span class="token punctuation">,</span>
+                child<span class="token operator">=</span>self<span class="token punctuation">.</span>v_box_rounds_text<span class="token punctuation">)</span>
+
+        <span class="token comment"># Button for 3 rounds</span>
+        self<span class="token punctuation">.</span>button_round_3 <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIFlatButton<span class="token punctuation">(</span>
+            text<span class="token operator">=</span><span class="token string">"3"</span><span class="token punctuation">,</span> width<span class="token operator">=</span><span class="token number">100</span><span class="token punctuation">,</span> style <span class="token operator">=</span> buttonStyle
+        <span class="token punctuation">)</span>
+
+        <span class="token comment"># Button for 5 rounds</span>
+        self<span class="token punctuation">.</span>button_round_5 <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIFlatButton<span class="token punctuation">(</span>
+            text<span class="token operator">=</span><span class="token string">"5"</span><span class="token punctuation">,</span> width<span class="token operator">=</span><span class="token number">100</span><span class="token punctuation">,</span> style <span class="token operator">=</span> buttonStyle
+        <span class="token punctuation">)</span>
+
+        <span class="token comment"># Button for 10 rounds</span>
+        self<span class="token punctuation">.</span>button_round_10 <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIFlatButton<span class="token punctuation">(</span>
+            text<span class="token operator">=</span><span class="token string">"10"</span><span class="token punctuation">,</span> width<span class="token operator">=</span><span class="token number">100</span><span class="token punctuation">,</span> style <span class="token operator">=</span> buttonStyle
+        <span class="token punctuation">)</span>
+
+        <span class="token comment">### Choose Difficulty - Easy / Difficult</span>
+        self<span class="token punctuation">.</span>button_easy <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIFlatButton<span class="token punctuation">(</span>
+            text<span class="token operator">=</span><span class="token string">"easy"</span><span class="token punctuation">,</span> width<span class="token operator">=</span><span class="token number">200</span><span class="token punctuation">,</span> style <span class="token operator">=</span> buttonStyle
+        <span class="token punctuation">)</span>
+
+        self<span class="token punctuation">.</span>button_difficult <span class="token operator">=</span> arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIFlatButton<span class="token punctuation">(</span>
+            text<span class="token operator">=</span><span class="token string">"difficult"</span><span class="token punctuation">,</span> width<span class="token operator">=</span><span class="token number">200</span><span class="token punctuation">,</span> style <span class="token operator">=</span> buttonStyle
+        <span class="token punctuation">)</span>
+
+        <span class="token comment"># VBOX Intial  -  Add the mode widgets</span>
+        self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>button_1v1<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>button_vComputer<span class="token punctuation">)</span>
+
+
+        <span class="token comment"># Add a hook to run when we click on the button.</span>
+        <span class="token comment"># There must be a more succinct way to do this, however, this is a new library for me :(</span>
+        self<span class="token punctuation">.</span>button_1v1<span class="token punctuation">.</span>on_click <span class="token operator">=</span> self<span class="token punctuation">.</span>button_1v1_clicked
+        self<span class="token punctuation">.</span>button_vComputer<span class="token punctuation">.</span>on_click <span class="token operator">=</span> self<span class="token punctuation">.</span>button_vComputer_clicked
+
+        self<span class="token punctuation">.</span>button_round_3<span class="token punctuation">.</span>on_click <span class="token operator">=</span> self<span class="token punctuation">.</span>round3
+        self<span class="token punctuation">.</span>button_round_5<span class="token punctuation">.</span>on_click <span class="token operator">=</span> self<span class="token punctuation">.</span>round5
+        self<span class="token punctuation">.</span>button_round_10<span class="token punctuation">.</span>on_click <span class="token operator">=</span> self<span class="token punctuation">.</span>round10
+
+        self<span class="token punctuation">.</span>button_easy<span class="token punctuation">.</span>on_click <span class="token operator">=</span> self<span class="token punctuation">.</span>choseEasy
+        self<span class="token punctuation">.</span>button_difficult<span class="token punctuation">.</span>on_click <span class="token operator">=</span> self<span class="token punctuation">.</span>choseDifficult
+
+        <span class="token comment"># Create a widget to hold the v_box widget, that will center the buttons</span>
+        self<span class="token punctuation">.</span>manager<span class="token punctuation">.</span>add<span class="token punctuation">(</span>
+            arcade<span class="token punctuation">.</span>gui<span class="token punctuation">.</span>UIAnchorWidget<span class="token punctuation">(</span>
+                anchor_x<span class="token operator">=</span><span class="token string">"center_x"</span><span class="token punctuation">,</span>
+                anchor_y<span class="token operator">=</span><span class="token string">"center_y"</span><span class="token punctuation">,</span>
+                align_y<span class="token operator">=</span><span class="token operator">-</span><span class="token number">120</span><span class="token punctuation">,</span>
+                child<span class="token operator">=</span>self<span class="token punctuation">.</span>v_box<span class="token punctuation">)</span>
+        <span class="token punctuation">)</span>
+
+    <span class="token triple-quoted-string string">"""There must be a more efficient way to do this
+    Each function acts a hook for the callback method and updates the game state based upon the function title.
+    Ie. round3 -&gt; gameState.round = 3 
+
+    """</span>
+    <span class="token keyword">def</span> <span class="token function">round3</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> event<span class="token punctuation">)</span><span class="token punctuation">:</span> 
+        <span class="token comment"># Set 3 Rounds</span>
+        gameState<span class="token punctuation">.</span>numberOfRounds <span class="token operator">=</span> <span class="token number">3</span>
+        self<span class="token punctuation">.</span>chooseDifficulty<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">def</span> <span class="token function">round5</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> event<span class="token punctuation">)</span><span class="token punctuation">:</span> 
+        <span class="token comment"># Set 5 Rounds</span>
+        gameState<span class="token punctuation">.</span>numberOfRounds <span class="token operator">=</span> <span class="token number">5</span>
+        self<span class="token punctuation">.</span>chooseDifficulty<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">def</span> <span class="token function">round10</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> event<span class="token punctuation">)</span><span class="token punctuation">:</span> 
+        <span class="token comment"># Set 10 rounds</span>
+        gameState<span class="token punctuation">.</span>numberOfRounds <span class="token operator">=</span> <span class="token number">10</span>
+        self<span class="token punctuation">.</span>chooseDifficulty<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">choseEasy</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> event<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Set easy mode</span>
+        gameState<span class="token punctuation">.</span>difficulty <span class="token operator">=</span> <span class="token string">"easy"</span>
+        self<span class="token punctuation">.</span>manager<span class="token punctuation">.</span>disable<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>goToGame<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">choseDifficult</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> event<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Set difficult mode</span>
+        gameState<span class="token punctuation">.</span>difficulty <span class="token operator">=</span> <span class="token string">"difficult"</span>
+        self<span class="token punctuation">.</span>manager<span class="token punctuation">.</span>disable<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>goToGame<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">chooseDifficulty</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># If the mode is against the computer then choose the difficult, if it is 1V1 then difficulty is obselete.</span>
+        <span class="token keyword">if</span> gameState<span class="token punctuation">.</span>mode <span class="token operator">==</span><span class="token string">"vComputer"</span><span class="token punctuation">:</span>
+            self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>clear<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>manager<span class="token punctuation">.</span>remove<span class="token punctuation">(</span>self<span class="token punctuation">.</span>managerRounds<span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>button_easy<span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>button_difficult<span class="token punctuation">)</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span> 
+            self<span class="token punctuation">.</span>manager<span class="token punctuation">.</span>disable<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            self<span class="token punctuation">.</span>goToGame<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">chooseRounds</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Manager to display the number of rounds buttons: 3 / 5 / 10</span>
+        self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>clear<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>vertical <span class="token operator">=</span> <span class="token boolean">False</span>
+        <span class="token comment"># self.v_box.add(self.ui_text_label)</span>
+        self<span class="token punctuation">.</span>manager<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>managerRounds<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>button_round_3<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>button_round_5<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>v_box<span class="token punctuation">.</span>add<span class="token punctuation">(</span>self<span class="token punctuation">.</span>button_round_10<span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">button_1v1_clicked</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> event<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Mode 1V1</span>
+        gameState<span class="token punctuation">.</span>mode <span class="token operator">=</span> <span class="token string">"1v1"</span>
+        self<span class="token punctuation">.</span>chooseRounds<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">button_vComputer_clicked</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> event<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Mode: against CPU</span>
+        gameState<span class="token punctuation">.</span>mode <span class="token operator">=</span> <span class="token string">"vComputer"</span>
+        self<span class="token punctuation">.</span>chooseRounds<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">goToGame</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Goes to the game view once the menu has finished, print for debug</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"""
+        Mode: </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span>mode<span class="token punctuation">}</span></span><span class="token string">
+        Number of rounds: </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span>numberOfRounds<span class="token punctuation">}</span></span><span class="token string">
+        Difficulty: </span><span class="token interpolation"><span class="token punctuation">{</span>gameState<span class="token punctuation">.</span>difficulty<span class="token punctuation">}</span></span><span class="token string">
+        """</span></span><span class="token punctuation">)</span>
+        game_view <span class="token operator">=</span> GameView<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>window<span class="token punctuation">.</span>show_view<span class="token punctuation">(</span>game_view<span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">setup</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># Change BG colour</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"setup"</span><span class="token punctuation">)</span>
+        arcade<span class="token punctuation">.</span>set_background_color<span class="token punctuation">(</span>BACKGROUND_COLOR<span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">on_show_view</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        self<span class="token punctuation">.</span>setup<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">on_draw</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
+        TITLE
+        buttons: ONE PLAYER / TWO PLAYER
+        buttons: Rounds: 1 / 2 / 3
+        IF ONE PLAYER:
+            buttons: DIFFICULTY: EASY / HARD
+            buttons: PLAYER_ORDER: COMPUTER / PERSON IS P1
+        """</span>
+
+        <span class="token comment"># Clear the screen, select the camera surface to draw onto, draw the scene</span>
+        self<span class="token punctuation">.</span>clear<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>gui_camera<span class="token punctuation">.</span>use<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>manager<span class="token punctuation">.</span>draw<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># TITLE: Tic Tac Toe</span>
+        textTitle <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Text<span class="token punctuation">(</span>theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_TITLE"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+            <span class="token number">140</span><span class="token punctuation">,</span>
+            SCREEN_HEIGHT <span class="token operator">-</span> <span class="token number">80</span><span class="token punctuation">,</span>
+            theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"TITLE_COLOUR"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+            theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_TITLE_FONT_SIZE"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+            font_name <span class="token operator">=</span> theme<span class="token punctuation">[</span>THEME<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">"GUI_TITLE_FONT"</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Positioning</span>
+        textTitle<span class="token punctuation">.</span>x <span class="token operator">=</span> <span class="token punctuation">(</span>SCREEN_WIDTH <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token punctuation">(</span>textTitle<span class="token punctuation">.</span>content_width <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span>
+        textTitle<span class="token punctuation">.</span>y <span class="token operator">=</span> <span class="token punctuation">(</span>SCREEN_HEIGHT <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span>
+        textTitle<span class="token punctuation">.</span>draw<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code class="fenced-code-block language-py"><span class="token comment"># Insantiate the game state class to be shared amongst the classes</span>
+gameState <span class="token operator">=</span> GameState<span class="token punctuation">(</span><span class="token punctuation">)</span>
+gameState<span class="token punctuation">.</span>setup<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+<span class="token keyword">def</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">""" Main function """</span>
+    <span class="token comment"># Show the main menu when the game is first started</span>
+    window <span class="token operator">=</span> arcade<span class="token punctuation">.</span>Window<span class="token punctuation">(</span>SCREEN_WIDTH<span class="token punctuation">,</span> SCREEN_HEIGHT<span class="token punctuation">,</span> SCREEN_TITLE<span class="token punctuation">)</span>
+    title_view <span class="token operator">=</span> MainMenu<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    window<span class="token punctuation">.</span>show_view<span class="token punctuation">(</span>title_view<span class="token punctuation">)</span>
+
+    <span class="token comment"># Run the game</span>
+    arcade<span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">"__main__"</span><span class="token punctuation">:</span> <span class="token comment"># If ran from this file itself and not imported - good practice</span>
+    main<span class="token punctuation">(</span><span class="token punctuation">)</span></code></pre>
 <h1 class="atx" id="additional-features">Additional Features</h1>
 <ul>
 <li><p>Music</p>

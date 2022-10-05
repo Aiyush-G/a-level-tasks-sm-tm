@@ -1,4 +1,7 @@
 import arcade
+
+# DIFFERENT THEMES TO BE USED WITH THE GAME THAT CAN BE CHANGED FOR ACCESSIBILTY:
+# Best theme (imoh) is blues
 theme={
     "original": {
         "BG": (142, 202, 230), # LIGHT BLUE
@@ -48,6 +51,8 @@ theme={
         "GUI_SUBTITLE_FONT_SIZE" : 25,
     },
 }
+
+# Bunch of constants to be passed into the main program
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
