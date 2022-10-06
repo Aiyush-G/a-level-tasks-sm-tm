@@ -18,7 +18,7 @@ class ConversionWindow(QtWidgets.QWidget):
 
         # From QT Designer
         self.ui = gui.Ui_Form()
-        self.ui.setupUi(self) # Builds the design onto the widget
+        self.ui.setupUi(self) # Builds the design onto the widget
         
 
         self.ui.convert_pushButton.clicked.connect(self.handleInput)
@@ -30,7 +30,7 @@ class ConversionWindow(QtWidgets.QWidget):
         #self.ui.console.insertPlainText("text")
     
     
-    #### CONVERSION
+    #### CONVERSION
 
     def binToDen(self, n):
         """
@@ -92,7 +92,7 @@ class ConversionWindow(QtWidgets.QWidget):
     def binaryToHex(self, n):
         # 0101 0101 -> denary -> hex
         left = int(len(n))%8
-        # print(f"LEFT: {left}")
+        # print(f"LEFT: {left}")
         if left != 0:
             toAdd = ""
             for _ in range(0, 8-left): toAdd += "0"
@@ -116,7 +116,7 @@ class ConversionWindow(QtWidgets.QWidget):
     def denaryToHex(self, n):
         return self.binaryToHex(self.denToBin(n))
 
-    #### HANDLE UI
+    #### HANDLE UI
     def handleInput(self):
         _input = self.ui.input_lineEdit.text()
 
@@ -146,10 +146,10 @@ class ConversionWindow(QtWidgets.QWidget):
             self._typeCheckValidated(_input)
         
         if self.validInput:
-            if self.inputType == self.possibleTypes[0]: # BIN
-                # BIN TO HEX, BIN TO DENARY
-                hex = self.binToDen(_input)
-                den = self.binaryToHex(_input)
+            if self.inputType == self.possibleTypes[0]: # BIN
+                # BIN TO HEX, BIN TO DENARY
+                den = self.binToDen(_input)
+                hex = self.binaryToHex(_input)
                 self.addToConsoleAndCalculation(f"{_input} to hexadecimal is {hex} ")
                 self.addToConsoleAndCalculation(f"{_input} to denary is {den} ")
 
@@ -159,7 +159,7 @@ class ConversionWindow(QtWidgets.QWidget):
                 self.addToConsoleAndCalculation(f"{_input} to hexadecimal is {hex} ")
                 self.addToConsoleAndCalculation(f"{_input} to binary is {bin} ")
 
-            elif self.inputType == self.possibleTypes[2]: # HEX
+            elif self.inputType == self.possibleTypes[2]: # HEX
                 bin = self.hexToBinary(_input)
                 den = self.hexToDenary(_input)
                 self.addToConsoleAndCalculation(f"{_input} to binary is {bin} ")
@@ -179,7 +179,7 @@ class ConversionWindow(QtWidgets.QWidget):
         self.addToConsole(text)
 
     def _type(self, starting):
-        # Binary or Denary    
+        # Binary or Denary    
         if starting.isdigit():
             numType = self.possibleTypes[0] # BIN
             for n in starting:

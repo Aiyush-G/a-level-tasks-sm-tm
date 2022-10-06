@@ -7,7 +7,7 @@
 
 # Determines type of input
 import re
-
+possibleTypes = "BIN DEN HEX AUTO INVALID".split(" ")
 
 def _type(starting):
     
@@ -114,11 +114,12 @@ def denToBin(n):
     return b
 
 def hexToBinary(n):
-    print(n)
-    hexValues = {0:0, 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, "A":10, "B":11, "C":12, "D":13, "E":14, "F":15}
+    
+    hexValues = {"0":0, "1":1, "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9, "A":10, "B":11, "C":12, "D":13, "E":14, "F":15}
     b = ""
     for hexDigit in list(n):
-        for digit in denToBin(hexValues[hexDigit]): b+= str(digit)
+        print(type(hexDigit))
+        for digit in denToBin(hexValues[str(hexDigit)]): b+= str(digit)
         print("b",b)
     return b
 
@@ -149,8 +150,25 @@ def hexToDenary(n):
 def denaryToHex(n):
     return binaryToHex(denToBin(n))
 
-print(hexToBinary("AA"))
 
+
+def cleanseInput(_input):
+    print(_input[:-1])
+    if _input[0] == "#":
+        _input = _input[1:]
+    if _input[-1] == "b":
+        _input = _input[:-1]
+    print(f"cleansed input {_input}")
+    return _input
+
+cleanseInput("1011b")
+
+
+
+#print(hexToBinary("A3"))
+#print(denToBin("2"))
+#hexValues = {0:0, 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, "A":10, "B":11, "C":12, "D":13, "E":14, "F":15}
+#print(hexValues[2])
 #print(binToDen("10101101"))
 #print(denToBin(999))
 #print(denaryToHex("511"))
