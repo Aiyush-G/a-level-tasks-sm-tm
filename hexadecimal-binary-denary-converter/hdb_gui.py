@@ -27,6 +27,9 @@ class ConversionWindow(QtWidgets.QWidget):
         <p>Hexadecimal to binary to denary converter with automatic detection for input. 
         Written in Python using PyQT graphics library for GUI.</p>
         """)
+
+        self.addToConsoleAndCalculation("""Standard characters `b` / `#` / `10` have been removed from the editor. \n\n If you would like to convert specific types please select the radio buttons. \n\nLikewise, on AUTO mode binary is detected as ANY MULTIPLE OF 8 BIT BINARY ONLY.""")
+
         #self.ui.console.insertPlainText("text")
     
     
@@ -119,6 +122,15 @@ class ConversionWindow(QtWidgets.QWidget):
     #### HANDLE UI
     def handleInput(self):
         _input = self.ui.input_lineEdit.text()
+
+        """
+        if _input[0] == "#":
+            _input = _input[1:]
+            self.addToConsole("Please note, standard char `#` for hex has been stripped from input")
+        elif _input[-1] == "b":
+            _input = _input[:-1]
+            self.addToConsole("Please note, standard char `b` for binary has been stripped from input")
+        """
 
         if _input == "":
             self.addToConsole(f"No Input Detected \n")
