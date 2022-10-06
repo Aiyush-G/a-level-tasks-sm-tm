@@ -1,3 +1,6 @@
+<head>
+  <title>Aiyush-G Alevel Projects</title>
+</head>
 # Aiyush Gupta - Tic Tac Toe
 
 *October 2022*
