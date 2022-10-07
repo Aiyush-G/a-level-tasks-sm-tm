@@ -7,7 +7,7 @@
 
 ---
 
-![wer](/Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/ticTacToeMockup.png)
+![wer](https://github.com/Aiyush-G/a-level-tasks-sm-tm/blob/master/noughtsCrosses/report/images/ticTacToeMockup.png?raw=true)
 
 # Specification
 
@@ -88,7 +88,7 @@ Overall, each algorithm is self-contained but the higher-level algorithms contai
 
 Example of *abstracted* main menu algorithm:
 
-![wer](/Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/MainMenuFlowchart.drawio.png)
+![wer](https://github.com/Aiyush-G/a-level-tasks-sm-tm/blob/master/noughtsCrosses/report/images/MainMenuFlowchart.drawio.png?raw=true)
 
 #### Computer vs Player Algorithm
 
@@ -108,7 +108,7 @@ def computerTurn(...):
 
 # Top-Down Decomposition
 
-<img title="" src="file:///Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/ticTacToe-StructureDiagram.drawio%2011.57.18.png" alt="here" data-align="center">
+<img title="" src="https://github.com/Aiyush-G/a-level-tasks-sm-tm/blob/master/noughtsCrosses/report/images/ticTacToe-StructureDiagram.drawio%2011.57.18.png?raw=true" alt="here" data-align="center">
 
 # Fully Commented Code Solution
 
@@ -967,11 +967,11 @@ if __name__ == "__main__": # If ran from this file itself and not imported - go
 
 **Test ID: 01, 11, 10, 09, 05, 07, 06, 02 (in order they appear LTR )**
 
-![tests](/Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/testing/testingEvidence/Slide1.png)
+![tests](https://github.com/Aiyush-G/a-level-tasks-sm-tm/blob/master/noughtsCrosses/report/images/testing/testingEvidence/Slide1.png?raw=true)
 
-![tests](/Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/testing/testingEvidence/Slide2.png)
+![tests](https://github.com/Aiyush-G/a-level-tasks-sm-tm/blob/master/noughtsCrosses/report/images/testing/testingEvidence/Slide2.png?raw=true)
 
-![tests](/Users/aiyushgupta/Documents/Computer%20Science/a-level-tasks/a-level-tasks-sm-tm/noughtsCrosses/report/images/testing/testingEvidence/Slide3.png)
+![tests](https://github.com/Aiyush-G/a-level-tasks-sm-tm/blob/master/noughtsCrosses/report/images/testing/testingEvidence/Slide3.png?raw=true)
 
 # Additional Features
 
