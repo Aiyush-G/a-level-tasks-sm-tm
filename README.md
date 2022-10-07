@@ -67,4 +67,11 @@ Nothing extra needed! Just Python! (written with 3.9 but any version > 3) will w
 
 Tiny code-blocks where I've tested some basic things ie. recursion etc...
 
+<!-- LICENSE -->
+
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
